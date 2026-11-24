@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Probing · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="probing" data-page-id="probing" data-root="../../">
+  <header class="top">
+    <h1>Probing</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Lightweight classifiers trained on activations — the cheapest way to ask what a layer knows.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>Train a lightweight classifier (usually linear, sometimes a small MLP) on a frozen model's activations to predict a property — POS, tense, sentiment, truth-value. If the probe reads it, the representation contains it. The cheapest instrument in <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> — and the oldest, with the deepest caveat: presence ≠ use.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> — probing is the first thing you point at a new representation: "does layer N encode X?" is answerable in an hour. Its limitations (correlation vs causation, probe learning the task itself) defined what stronger methods had to prove.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The setup.</strong> Freeze the model, collect hidden states at a layer, train a linear head to predict the labelled property — accuracy = "information is present".</li>
+    <li><strong>Control tasks.</strong> Hewitt &amp; Liang: probe accuracy must beat accuracy on randomized task — otherwise the probe learned the property itself, not the representation's.</li>
+    <li><strong>Linear vs expressive.</strong> Linear probes claim "linearly accessible" information (the strong claim); MLP probes find more but prove less.</li>
+    <li><strong>MDL probes.</strong> Minimum description length / information-theoretic variants — how <em>easily</em> the information is extracted, not just whether.</li>
+    <li><strong>What probes can't say.</strong> Correlation, not causation: the layer may encode X without the network using X — <code>activation-steering</code> and ablation are the causal instruments that complete the claim.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Layer-wise POS probing on BERT: accuracy peaks mid-stack (~layers 5–8) then drops — "syntax lives in the middle, semantics at the top" — the canonical layered-representation result (Tenney et al., "BERT rediscovers the classical NLP pipeline").</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Alain &amp; Bengio, *Understanding intermediate layers using linear classifier probes* — <a href="https://arxiv.org/abs/1610.01644" target="_blank" rel="noopener">arXiv:1610.01644</a></li>
+    <li>Tenney et al., BERT pipeline — <a href="https://arxiv.org/abs/1905.05950" target="_blank" rel="noopener">arXiv:1905.05950</a></li>
+    <li>Hewitt &amp; Liang, control tasks — <a href="https://arxiv.org/abs/1909.03368" target="_blank" rel="noopener">arXiv:1909.03368</a></li>
+    <li>Voita &amp; Titov, MDL probes — <a href="https://arxiv.org/abs/2004.12298" target="_blank" rel="noopener">arXiv:2004.12298</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Probing "capability" (deception, planning) vs surface properties — how do you label a behaviour you can't verify? — the safety-adjacent probing frontier.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

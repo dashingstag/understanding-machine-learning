@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ML foundations · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="ml-foundations" data-page-id="ml-foundations" data-root="../../">
+  <header class="top">
+    <h1>ML foundations</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The shared base everything tears down to: gradient descent, backpropagation, probability, linear algebra, information.</p>
+    <p class="doc-syms"><span data-notation="weights-theta"></span> <span data-notation="loss-l"></span> <span data-notation="learning-rate"></span> <a class="doc-concept" href="../../site/notation.html#gd-update"><code>gd-update</code></a></p>
+    <h2>Statement</h2>
+    <p>Machine learning, reduced to five working claims:</p>
+    <ol>
+    <li>A <strong>model</strong> is a parameterized function $f_\theta$: input sequence in, probability distribution out. $\theta$ is all learned weights (<code data-notation="weights-theta">weights-theta</code>).</li>
+    <li><strong>Learning</strong> is minimizing a scalar <code data-notation="loss-l">loss-l</code> $\mathcal{L}(\theta)$ over <code>training-data</code> — one number that says how wrong the model is.</li>
+    <li>The update is <a class="doc-concept" href="../../site/notation.html#gd-update"><code>gd-update</code></a>: step opposite the gradient, scaled by <code data-notation="learning-rate">learning-rate</code> $\eta$.</li>
+    <li>The gradient comes from <code>backpropagation</code> — the chain rule run backward through the computation graph.</li>
+    <li><strong>Generalization</strong> — performance on data never seen — is the only score that counts.</li>
+    </ol>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> is a map of systems; this node is the physics. Every other concept's teardown lands here — attention's Q/K/V are learned weights, RLHF's objective is still a loss, MoE's router is still trained by backprop. Without the foundations, the rest of the map is a parts list with no mechanism.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Function.</strong> A neural network is layers of affine maps plus nonlinearities — <a class="doc-concept" href="../../concepts/feedforward-layer/playback.html"><code>feedforward-layer</code></a>, <a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> are the specific shapes. In principle such stacks compute anything (<code>universal-approximation</code>), though depth and data decide what is practical.</li>
+    <li><strong>Loss.</strong> The task becomes one scalar — <a class="doc-concept" href="../../site/notation.html#cross-entropy"><code>cross-entropy</code></a> for language models. Loss design <em>is</em> model design: predict noise (<a class="doc-concept" href="../../site/notation.html#ddpm-loss"><code>ddpm-loss</code></a>), match preferences (<a class="doc-concept" href="../../site/notation.html#dpo-loss"><code>dpo-loss</code></a>).</li>
+    <li><strong>Descent.</strong> <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a>: compute $\nabla_\theta \mathcal{L}$, step by $-\eta\nabla$. <code>optimizers</code> (momentum, Adam) are the real-world versions.</li>
+    <li><strong>Backprop.</strong> <code>backpropagation</code> — recursive chain rule; gives every parameter's partial derivative for the cost of ~2 forward passes.</li>
+    <li><strong>Fitting vs generalizing.</strong> The model can memorize or generalize; <a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> is how we tell which happened; <code>double-descent</code> is the modern complication of that picture.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>One gradient step by hand. Model $f(x) = wx$, loss $\mathcal{L} = (wx - y)^2$ on the single point $(x, y) = (2, 6)$, starting $w = 0$, $\eta = 0.25$:</p>
+    <ul>
+    <li>$\nabla_w \mathcal{L} = 2(wx - y)\cdot x = 2(0 - 6)\cdot 2 = -24$</li>
+    <li>$w \leftarrow 0 - 0.25 \cdot (-24) = 6$ — the update lands exactly on the best $w$ for this one point because the loss is quadratic.</li>
+    </ul>
+    <p>Change $\eta$ to $0.6$: $w \leftarrow 0 - 0.6 \cdot (-24) = 14.4$, then the next gradient $2(28.8 - 6)\cdot 2 = 91.2$ — oscillation into divergence. Same mechanics, toy numbers: the step-size drama on the <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a> page is already here in one line.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Goodfellow, Bengio, Courville, <em>Deep Learning</em> (2016), ch. 2–8 — <a href="https://www.deeplearningbook.org/" target="_blank" rel="noopener">deeplearningbook.org</a></li>
+    <li>Rumelhart, Hinton, Williams, *Learning representations by back-propagating errors*, Nature 1986</li>
+    <li>Rosenblatt, <em>The perceptron</em>, Psychological Review 1958</li>
+    <li>Karpathy, <em>Neural Networks: Zero to Hero</em> — <a href="https://karpathy.ai/zero-to-hero.html" target="_blank" rel="noopener">karpathy.ai/zero-to-hero</a></li>
+    <li>Ng, CS229 lecture notes — <a href="https://cs229.stanford.edu/" target="_blank" rel="noopener">cs229.stanford.edu</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Why do grotesquely overparameterized networks generalize at all? (<code>double-descent</code>, <code>emergent-abilities</code>)</li>
+    <li>What does the loss landscape actually look like at scale — and why is SGD+Adam's implicit bias what it is?</li>
+    <li>Where is the clean theoretical account of in-context learning? — belongs to <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

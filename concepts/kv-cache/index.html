@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KV cache · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="kv-cache" data-page-id="kv-cache" data-root="../../">
+  <header class="top">
+    <h1>KV cache</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Cached key/value tensors for all past tokens — the structure decode speed and memory both live and die on.</p>
+    <p class="doc-syms"><a class="doc-concept" href="../../site/notation.html#kv-bytes"><code>kv-bytes</code></a> <span data-notation="key-matrix"></span> <span data-notation="value-matrix"></span> <span data-notation="key-dim"></span></p>
+    <h2>Statement</h2>
+    <p>Cache of every past token's key/value tensors so attention doesn't recompute them during decode: after prefill, each new token computes its own <code data-notation="key-matrix">key-matrix</code>/<code data-notation="value-matrix">value-matrix</code> projections once and appends them; attention reads the whole cache. Cost: <a class="doc-concept" href="../../site/notation.html#kv-bytes"><code>kv-bytes</code></a> — linear in layers × KV-heads × <code data-notation="key-dim">key-dim</code> × context — the structure decode speed and memory both live and die on.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a> — every decode step rereads the whole cache: it's the serving-memory bottleneck, the long-context price, and the reason GQA/MQA/MLA exist. <a class="doc-concept" href="../../concepts/attention-mechanism/playback.html"><code>attention-mechanism</code></a>'s quadratic compute became a linear memory problem that serving must now pay.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>What it stores.</strong> Per layer, per past token: K and V vectors — decode of token $n$ needs only the cache + the new token's own Q/K/V.</li>
+    <li><strong>The size.</strong> <a class="doc-concept" href="../../site/notation.html#kv-bytes"><code>kv-bytes</code></a>: $2 L n_{kv} d_h \cdot \text{ctx} \cdot \text{bytes/elem}$ — e.g., 32L × 8KV × 128d fp16 ≈ 131KB/token; 128k context ≈ 17GB per sequence.</li>
+    <li><strong>Shrinking it.</strong> MQA (1 KV head), GQA (8 of 64), MLA (low-rank latent compression — DeepSeek's answer), quantization of the cache itself.</li>
+    <li><strong>Paging.</strong> vLLM's PagedAttention treats the cache like virtual memory — fixed-size blocks, copy-on-write for beam/prefix sharing: the throughput trick behind modern serving.</li>
+    <li><strong>Prefix caching.</strong> Shared system prompts/tool docs reuse the same cache — the "it remembered my instructions" trick in production.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Llama-70B-class (80 layers, GQA-8, $d_h = 128$, fp16):</p>
+    <ul>
+    <li>Per token: $2 \cdot 80 \cdot 8 \cdot 128 \cdot 2B = 327$KB.</li>
+    <li>32k context → 10.5GB cache — more than the model's weights slice on many GPUs; MLA compresses this ~10× by storing a shared low-rank latent instead of full K/V.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Pope et al., GQA — <a href="https://arxiv.org/abs/2305.13245" target="_blank" rel="noopener">arXiv:2305.13245</a></li>
+    <li>Shazeer, MQA — <a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener">arXiv:1911.02150</a></li>
+    <li>DeepSeek V2 (MLA) — <a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener">arXiv:2405.04434</a></li>
+    <li>Kwon et al., PagedAttention — <a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">arXiv:2309.06180</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Sublinear context memory (compression, retrieval, state-space) — can "remember everything" be cheaper than "store everything"?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

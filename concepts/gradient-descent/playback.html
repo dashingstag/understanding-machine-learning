@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gradient descent · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="gradient-descent" data-page-id="gradient-descent" data-root="../../">
+  <header class="top">
+    <h1>Gradient descent</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Descent on a quadratic bowl</h3>
+    <svg id="anim" viewBox="0 0 300 220"></svg>
+    <label>step: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="23" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The question">
+      <h2>The question: how do you improve a billion knobs?</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Cauchy proposed steepest descent in 1847 — for hand computation.
+          Stochastic descent followed in 1951 (Robbins–Monro): the same two
+          ideas still run every frontier training run.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>There is no plan B. RLHF, DPO, MoE routing, tokenizer-free
+          models — every learned thing in this map is produced by this
+          update or a variant of it.</p>
+      </aside>
+      <p>A modern model's <span data-notation="weights-theta">model
+        parameters</span> $\theta$ number in the hundreds of billions. Trial
+        and error is out; calculus is in. For each knob we can ask: does
+        nudging it up raise or lower the
+        <span data-notation="loss-l">loss</span>? That answer — for all of
+        them at once — is the gradient.</p>
+    </section>
+
+    <section class="frame" data-title="Statement">
+      <h2>Statement</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The update rule is one line; the machinery that makes it usable
+          is <a data-concept-link="backpropagation">backpropagation</a> —
+          the gradient factory nobody sees.</p>
+      </aside>
+      <div data-formula="gd-update"></div>
+      <p>Three roles, three failure modes: $\theta$ is huge (cost),
+        $\eta$ is tiny (stability), and $\nabla\mathcal{L}$ is estimated on
+        a minibatch (noise). The rest of this page is managing those
+        three.</p>
+    </section>
+
+    <section class="frame" data-title="Step size">
+      <h2>Step size rules everything</h2>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>When a frontier run's loss spikes at 3 a.m., the first thing
+          engineers touch is the <span data-notation="learning-rate">learning
+          rate</span> schedule — warmup length, peak, decay shape. It is the
+          most-watched dial in training.</p>
+      </aside>
+      <p>Too small: convergence never arrives inside the
+        <span data-notation="compute-c">compute budget</span>.
+        Too large: the step overshoots the valley, the next gradient is
+        larger still, and the loss explodes — the toy on the right shows
+        both regimes in one step.</p>
+      <p>The standard fix is a <em>schedule</em>: a short warmup while the
+        model is still chaotic, a plateau, then a decay (cosine or linear)
+        that anneals into the minimum.</p>
+    </section>
+
+    <section class="frame" data-title="Stochastic & adaptive">
+      <h2>Stochastic, momentum, adaptive</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="kingma">Diederik Kingma</span> co-authored
+          Adam in 2014 — two running averages (of the gradient and its
+          square) that became the default optimizer — and separately the
+          VAE and <a data-concept-link="flow-matching">flow matching</a>. Productive decade.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Nobody computes the full-data gradient — minibatch SGD is
+          noisier per step and massively cheaper per pass over
+          <a data-concept-link="training-data">training data</a>, and the
+          noise doubles as exploration.</p>
+      </aside>
+      <p>Three upgrades on the naive rule: <strong>minibatches</strong>
+        (cheap noisy gradients, better generalization),
+        <strong>momentum</strong> (keep a velocity; roll past small bumps),
+        <strong>adaptive rates</strong> (per-parameter steps — Adam). All
+        torn down in <a data-concept-link="optimizers">optimizers</a>.</p>
+    </section>
+
+    <section class="frame" data-title="Try it">
+      <h2>Try it — one parameter, one knob</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>On a quadratic, plain descent converges geometrically —
+          error × (1 − 2ηa) each step where $a$ is the curvature. Above a
+          critical $\eta$ the multiplier flips sign and grows: divergence
+          is a cliff, not a slope.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Same drama, real stakes: a too-hot LR on a $10M run doesn't
+          politely warn you — the loss curve spikes and the checkpoint is
+          garbage.</p>
+      </aside>
+      <p>$\mathcal{L}(w) = (w-3)^2$, start $w = 0$. Drag $\eta$, hit play —
+        watch convergence at 0.25 turn to divergence past 0.5:</p>
+      <div class="widget" id="gd-toy">
+        <label>η = <strong id="eta-lab">0.25</strong>
+          <input type="range" id="eta" min="0.05" max="0.95" step="0.05" value="0.25" style="width:160px">
+        </label>
+        <button id="gd-step">step</button>
+        <button id="gd-run">run</button>
+        <div id="gd-bars" style="margin-top:8px"></div>
+        <p class="muted" id="gd-out"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // ---- anim: GD path on f(x,y) = x^2 + 4y^2 ----
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const CX = 150, CY = 110, SX = 65, SY = 50;
+    const f = p => p[0] ** 2 + 4 * p[1] ** 2;
+    // contours
+    [0.15, 0.5, 1.2, 2.2, 3.6, 5.4].forEach(c => {
+      svg.appendChild(el("ellipse", { cx: CX, cy: CY,
+        rx: Math.sqrt(c) * SX, ry: Math.sqrt(c) * SY / 2,
+        fill: "none", stroke: "#2b333d", "stroke-width": 1 }));
+    });
+    // path: p <- p - eta*grad
+    const P = [[1.55, 0.85]];
+    const ETA = 0.09;
+    for (let i = 0; i < 23; i++) {
+      const [x, y] = P[P.length - 1];
+      P.push([x - ETA * 2 * x, y - ETA * 8 * y]);
+    }
+    const M = p => [CX + p[0] * SX, CY - p[1] * SY];
+    const trail = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: "" });
+    const dot = el("circle", { r: 4.5, fill: "#fff" });
+    const minT = el("text", { x: CX + 6, y: CY + 4, "font-size": 10, fill: "#9aa" });
+    minT.textContent = "min";
+    svg.appendChild(trail); svg.appendChild(dot); svg.appendChild(minT);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      const pts = P.slice(0, i + 1).map(p => M(p).join(",")).join(" ");
+      trail.setAttribute("points", pts);
+      const [sx, sy] = M(P[i]);
+      dot.setAttribute("cx", sx); dot.setAttribute("cy", sy);
+      lab.textContent = i;
+      info.textContent = `w = [${P[i][0].toFixed(3)}, ${P[i][1].toFixed(3)}], L = ${f(P[i]).toFixed(4)} — zigzag is the price of a fixed η on anisotropic curvature.`;
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % P.length; paint(i); };
+    const start = () => { timer = setInterval(tick, 900); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+
+    // ---- widget: L = (w-3)^2, user-controlled eta ----
+    let w = 0, steps = 0, running = null;
+    const etaEl = document.getElementById("eta");
+    const etaLab = document.getElementById("eta-lab");
+    const bars = document.getElementById("gd-bars");
+    const out = document.getElementById("gd-out");
+    etaEl.oninput = () => { etaLab.textContent = (+etaEl.value).toFixed(2); };
+    const grad = () => 2 * (w - 3), loss = () => (w - 3) ** 2;
+    function draw() {
+      const L = loss(), scale = Math.min(1, 9 / Math.max(L, 0.01));
+      bars.innerHTML =
+        `<div>w = <strong>${w.toFixed(3)}</strong> · L = ${L.toFixed(4)} · step ${steps}</div>` +
+        `<div style="height:10px;width:${(Math.min(L, 40) / 40 * 200).toFixed(0)}px;` +
+        `background:${L > 12 ? "#f85149" : "#58a6ff"};border-radius:2px"></div>` +
+        `<div class="muted" style="font-size:10px">loss bar (clipped at 40)</div>`;
+    }
+    function step() {
+      w = w - (+etaEl.value) * grad(); steps++;
+      out.textContent = Math.abs(w) > 20 || loss() > 1e4
+        ? "diverged — reset and try a smaller η." : "";
+      draw();
+    }
+    document.getElementById("gd-step").onclick = () => step();
+    document.getElementById("gd-run").onclick = () => {
+      if (running) { clearInterval(running); running = null;
+        document.getElementById("gd-run").textContent = "run"; return; }
+      document.getElementById("gd-run").textContent = "stop";
+      running = setInterval(() => { step();
+        if (Math.abs(w) > 30) { clearInterval(running); running = null;
+          document.getElementById("gd-run").textContent = "run"; } }, 300);
+    };
+    // reset on eta change for clarity of experiment
+    etaEl.addEventListener("change", () => { w = 0; steps = 0; draw(); });
+    draw();
+  </script>
+</body>
+</html>

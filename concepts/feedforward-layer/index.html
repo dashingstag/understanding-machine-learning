@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feed-forward layer · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="feedforward-layer" data-page-id="feedforward-layer" data-root="../../">
+  <header class="top">
+    <h1>Feed-forward layer</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The two-layer perceptron inside every block — roughly two-thirds of a transformer's parameters and most of its factual storage.</p>
+    <p class="doc-syms"><span data-notation="d-model"></span> <span data-notation="sigma-act"></span> <span data-notation="weights-theta"></span> <span data-notation="n-params"></span></p>
+    <h2>Statement</h2>
+    <p>The position-wise two-layer perceptron inside every transformer block — see <a class="doc-concept" href="../../site/notation.html#ffn"><code>ffn</code></a>: expand from <code data-notation="d-model">d-model</code> $d$ to $4d$ (gated variants: ~$8d/3$), apply <code data-notation="sigma-act">sigma-act</code> (ReLU/GELU/SiLU), project back. Identical weights at every position; ~⅔ of a model's <code data-notation="n-params">n-params</code> lives here.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> — attention only <em>routes</em> information between positions; the FFN is where each position's representation is actually transformed. <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> work (Geva et al. 2021) finds factual memories stored as key–value pairs in FFN matrices — "the store" to attention's "router".</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Shape.</strong> $x \mapsto W_2\,\sigma(W_1 x + b_1) + b_2$, $W_1 \in \mathbb{R}^{4d \times d}$ — two fat matmuls.</li>
+    <li><strong>Role.</strong> Attention mixes; FFN computes. Each position is processed independently — the FFN can't see other tokens, which is why it must happen <em>after</em> attention has gathered context.</li>
+    <li><strong>Activations.</strong> ReLU → GELU (GPT-2) → SiLU/SwiGLU (Llama-family): gated variants split the up-projection in two and multiply — $\text{SwiGLU}(x) = (\text{Swish}(xW) \otimes xV)\,W_2$.</li>
+    <li><strong>Where knowledge lives.</strong> Probing and causal interventions implicate mid-stack FFNs in factual recall (e.g., "the Eiffel Tower is in Paris" firing specific neurons) — see <code>probing</code>, <code>sparse-autoencoders</code>.</li>
+    <li><strong>The MoE hook.</strong> <a class="doc-concept" href="../../concepts/mixture-of-experts/playback.html"><code>mixture-of-experts</code></a> is just the FFN replicated $E$ times with a <code data-notation="gate-g">gate-g</code> router choosing — same shape, sparse activation.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>GPT-2 small block: $d = 768$, FFN inner $= 4d = 3072$.</p>
+    <ul>
+    <li>$W_1$: $768 \times 3072 \approx 2.36$M, $W_2$ same $\Rightarrow$ $\approx 4.72$M params vs attention's $\approx 2.36$M — exactly the ⅔ split quoted across this map.</li>
+    <li>Per token FLOPs $\approx 2 \times 4.72$M $\approx 9.4$M multiply-adds — cheap alone, dominant over 12 blocks.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Vaswani et al., §3.3 — <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arXiv:1706.03762</a></li>
+    <li>Geva et al., <em>Transformer Feed-Forward Layers Are Key-Value Memories</em> — <a href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener">arXiv:2012.14913</a></li>
+    <li>Shazeer, <em>GLU Variants Improve Transformer</em> — <a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener">arXiv:2002.05202</a></li>
+    <li>Touvron et al., <em>LLaMA</em> (SwiGLU choice) — <a href="https://arxiv.org/abs/2302.13971" target="_blank" rel="noopener">arXiv:2302.13971</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Are FFN "memories" retrievable/editable surgically (ROME-style) or hopelessly entangled? — the <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> research question.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

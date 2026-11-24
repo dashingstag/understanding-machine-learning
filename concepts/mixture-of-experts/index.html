@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mixture of experts · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="mixture-of-experts" data-page-id="mixture-of-experts" data-root="../../">
+  <header class="top">
+    <h1>Mixture of experts</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Sparse routing: each token activates a few of many expert feed-forward networks — capacity without proportional compute.</p>
+    <p class="doc-syms"><span data-notation="gate-g"></span> <span data-notation="weights-theta"></span> <span data-notation="n-params"></span> <span data-notation="flop"></span></p>
+    <h2>Statement</h2>
+    <p>Replace the dense <a class="doc-concept" href="../../concepts/feedforward-layer/playback.html"><code>feedforward-layer</code></a> with $E$ expert FFNs plus a learned <code data-notation="gate-g">gate-g</code> router that sends each token to the top-$k$ experts — <a class="doc-concept" href="../../site/notation.html#moe-layer"><code>moe-layer</code></a>. Parameters grow ~$E\times$ while per-token compute stays flat: capacity without proportional <code data-notation="flop">flop</code> cost. Switch Transformer, Mixtral, DeepSeek-V3 and most frontier open models are MoE.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — MoE set the price/performance curve of the whole field: Mixtral-8×7B-quality on ~13B activated params changed what "small" means, and DeepSeek-V3's MoE recipe reset expectations of open-model capability. Sparsity is the main trick <a class="doc-concept" href="../../concepts/scaling-laws/playback.html"><code>scaling-laws</code></a> didn't see coming.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The swap.</strong> Dense FFN → $E$ expert FFNs (same shape) + router. Per token: gate → top-$k$ experts → weighted sum — <a class="doc-concept" href="../../site/notation.html#moe-layer"><code>moe-layer</code></a>.</li>
+    <li><strong>The router problem.</strong> <code>expert-routing</code>: softmax gates over experts, top-$k$ keep — discrete choice made differentiable by scaling the expert output by the gate score.</li>
+    <li><strong>Load balancing.</strong> Tokens flock to favourite experts → auxiliary loss penalizing skew (Switch), or bias-free balancing (DeepSeek's router aux-loss-free trick).</li>
+    <li><strong>Capacity factor.</strong> Tokens-per-expert cap: overflow tokens are dropped/bypassed — the memory-compute bargain's ugly edge.</li>
+    <li><strong>Why it works.</strong> Specialization emerges (code expert, math expert — though routing isn't cleanly semantic); sparse activation keeps inference cheap: <a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a> loves it, memory doesn't (all experts must be resident).</li>
+    <li><strong>Variants.</strong> Shared experts (one always-on), fine-grained experts (many small), expert-choice routing — the 2024+ design space.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Mixtral 8×7B: $E = 8$ experts, top-$k = 2$ per token.</p>
+    <ul>
+    <li>Total FFN params ≈ 8× dense; activated per token ≈ 2/8 = 25% — 47B total, ~13B activated: dense-13B speed, 47B capacity.</li>
+    <li>DeepSeek-V3 pushes further: 256 routed + 1 shared expert per layer, top-8 → 671B total, 37B activated — the recipe that made an open model trade punches with frontier closed ones.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Shazeer et al., <em>Outrageously Large Neural Networks</em> — <a href="https://arxiv.org/abs/1701.06538" target="_blank" rel="noopener">arXiv:1701.06538</a></li>
+    <li>Fedus et al., Switch Transformer — <a href="https://arxiv.org/abs/2101.03961" target="_blank" rel="noopener">arXiv:2101.03961</a></li>
+    <li>Jiang et al., Mixtral — <a href="https://arxiv.org/abs/2401.04088" target="_blank" rel="noopener">arXiv:2401.04088</a></li>
+    <li>DeepSeek-AI, V3 technical report — <a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">arXiv:2412.19437</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Do experts specialize semantically or just statistically? — <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> meets routing; evidence is mixed.</li>
+    <li>Fine-grained + shared expert designs vs classic top-k — the open architecture frontier.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

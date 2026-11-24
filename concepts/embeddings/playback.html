@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Embeddings · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="embeddings" data-page-id="embeddings" data-root="../../">
+  <header class="top">
+    <h1>Embeddings</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Walk king → queen</h3>
+    <svg id="anim" viewBox="0 0 300 230"></svg>
+    <label>t = <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Words → vectors">
+      <h2>Words → vectors</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="mikolov">Tomas Mikolov</span>'s word2vec made
+          headlines in 2013 with a subtraction: king − man + woman landed
+          next to queen — proof the space encoded meaning, not just
+          position.</p>
+      </aside>
+      <p>A one-hot id knows nothing — 'cat' and 'dog' are as distant as
+        'cat' and 'granite'. A dense
+        <span data-notation="embed-e">embedding vector</span> fixes that:
+        $|\mathcal{V}|$ rows of learned floats where similarity is
+        <em>geometric</em>. The table is just
+        <span data-notation="weights-theta">model parameters</span>, learned
+        by the same update as everything else.</p>
+    </section>
+
+    <section class="frame" data-title="Geometry">
+      <h2>The geometry</h2>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Semantic search, recommendations and every
+          <a data-concept-link="retrieval-augmented-generation">RAG</a>
+          index are this slide in production: embed everything once, then
+          <a data-concept-link="vector-search">vector search</a> answers
+          "what's near this?" in milliseconds.</p>
+      </aside>
+      <div data-formula="cosine"></div>
+      <p>Distance answers "are these related?"; <em>direction</em> answers
+        "how?" — gender, tense, scale, sentiment survive as axes you can
+        walk along. The panel animates the classic walk: interpolating
+        between two words passes through their neighbours.</p>
+    </section>
+
+    <section class="frame" data-title="Where they come from">
+      <h2>Where they come from</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Independently trained models learn <em>aligned</em> spaces —
+        "the platonic representation hypothesis" (Huh et al. 2024): same
+        world, same geometry, different weights.</p>
+      </aside>
+      <p>Three manufacturing routes: (a) <strong>predictive</strong> —
+        word2vec's "guess the neighbour"; (b)
+        <a data-concept-link="contrastive-learning">contrastive</a> —
+        CLIP's "pull matching image/text pairs together"; (c)
+        <strong>in place</strong> — an LLM's input table, trained end to
+        end inside the
+        <a data-concept-link="transformer-architecture">transformer</a> and
+        usually <em>tied</em> to the output
+        <a data-concept-link="unembedding">unembedding</a>, so logits are
+        literally similarity scores.</p>
+    </section>
+
+    <section class="frame" data-title="Beyond words">
+      <h2>Same math, other modalities</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Embeddings are one of the few weight matrices with legible rows:
+          nearest-neighbour lists are human-readable — the original
+          interpretability tool, free with the model.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>A Spotify song vector, a CLIP image vector and a product
+          vector are the same object on different data —
+          <a data-concept-link="multimodal-models">multimodal models</a>
+          are what happens when they share one space.</p>
+      </aside>
+      <p>Anything a model must compare or feed in gets a vector: images,
+        audio, users, code. Embedding models are their own product
+        category (OpenAI, Cohere, open-weight BGE/E5) — ranked on
+        <a data-concept-link="evaluation">MTEB-style</a> retrieval
+        benchmarks.</p>
+    </section>
+
+    <section class="frame" data-title="Try it">
+      <h2>Try it — the walk, by hand</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>"king − man + woman ≈ queen" survives because the <em>offset</em>
+          between the pairs is nearly constant — the space is locally
+          linear on that relation, which is the surprising part.</p>
+      </aside>
+      <p>The panel's walk is linear interpolation
+        $\mathbf{e}(t) = (1-t)\mathbf{e}_{king} + t\mathbf{e}_{queen}$.
+        Click "nearest": the widget scans the vocabulary and reports which
+        word the moving point is closest to at each $t$:</p>
+      <div class="widget" id="emb-toy">
+        <label>t = <strong id="et">0.5</strong>
+          <input type="range" id="ets" min="0" max="100" value="50" style="width:160px"></label>
+        <button id="enearest">nearest word</button>
+        <p class="muted" id="eout"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // 2-D embedding space: walk king -> queen, show nearest neighbour
+    const PTS = { king: [0.9, 0.8], man: [0.75, 0.55], woman: [0.8, 0.75],
+      queen: [0.85, 0.95], prince: [0.88, 0.7], apple: [-0.7, 0.4],
+      orange: [-0.65, 0.5], juice: [-0.5, 0.55], city: [0.1, -0.6],
+      village: [0.05, -0.7] };
+    const K = "king", Q = "queen";
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const MX = 150, MY = 115, S = 105;
+    const M = p => [MX + p[0] * S, MY - p[1] * S];
+    const near = (p, excl) => Object.entries(PTS)
+      .filter(([w]) => !excl.includes(w))
+      .map(([w, v]) => [w, (p[0]-v[0])**2 + (p[1]-v[1])**2])
+      .sort((a, b) => a[1] - b[1])[0][0];
+    for (const [w, v] of Object.entries(PTS)) {
+      const [x, y] = M(v);
+      svg.appendChild(el("circle", { cx: x, cy: y, r: 3.5,
+        fill: w === K || w === Q ? "#58a6ff" : "#8b949e" }));
+      const t = el("text", { x: x + 7, y: y + 4, "font-size": 10,
+        fill: "#c9d1d9" }); t.textContent = w; svg.appendChild(t);
+    }
+    const [x1, y1] = M(PTS[K]), [x2, y2] = M(PTS[Q]);
+    svg.appendChild(el("line", { x1, y1, x2, y2, stroke: "#58a6ff",
+      "stroke-dasharray": "4 3" }));
+    const dot = el("circle", { r: 6, fill: "#f0883e" });
+    svg.appendChild(dot);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    const at = t => [PTS[K][0] + t * (PTS[Q][0] - PTS[K][0]),
+                     PTS[K][1] + t * (PTS[Q][1] - PTS[K][1])];
+    function paint(tv) {
+      const t = tv / 100, p = at(t), [x, y] = M(p);
+      dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+      lab.textContent = t.toFixed(2);
+      info.textContent = `nearest word to the walk: "${near(p, [K, Q])}"`;
+      scrub.value = tv;
+    }
+    let tv = 0, dir = 1, timer;
+    const tick = () => { tv += dir * 2; if (tv >= 100 || tv <= 0) dir = -dir;
+      paint(tv); };
+    const start = () => { timer = setInterval(tick, 80); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); tv = 0; paint(0); start(); });
+    paint(0); start();
+
+    // widget: same walk, user-controlled t, reports nearest word + cos to queen
+    const cos = (a, b) => (a[0]*b[0]+a[1]*b[1]) /
+      (Math.hypot(...a) * Math.hypot(...b));
+    document.getElementById("ets").oninput = e => {
+      document.getElementById("et").textContent = (e.target.value / 100).toFixed(2); };
+    document.getElementById("enearest").onclick = () => {
+      const t = document.getElementById("ets").value / 100, p = at(t);
+      document.getElementById("eout").textContent =
+        `nearest: "${near(p, [])}" · cos(walk, queen) = ${cos(p, PTS[Q]).toFixed(3)}`; };
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evaluation · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="evaluation" data-page-id="evaluation" data-root="../../">
+  <header class="top">
+    <h1>Evaluation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>A benchmark's life cycle</h3>
+    <svg id="anim" viewBox="0 0 300 180"></svg>
+    <label>year: <strong id="scrub-label">2020</strong></label>
+    <input type="range" id="scrub" min="0" max="6" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Why evals are hard">
+      <h2>The weirdest weakness in the field</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="goodhart">Charles Goodhart</span>'s law —
+          "when a measure becomes a target it ceases to be a good
+          measure" (<span data-theorem="goodhart-law">statement</span>)
+          — was coined for economics in 1975 and describes benchmark
+          marketing better than any ML paper.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every frontier release is a chart of numbers — and
+          <a data-concept-link="benchmark-contamination">contamination
+          audits</a> routinely find the test set inside the training
+          corpus. The numbers are the weakest part of the paper.</p>
+      </aside>
+      <p>The pipeline that makes trillion-parameter models is
+        engineering-grade; the instruments used to <em>measure</em>
+        them are jury-rigged. This page is about what the scores
+        actually mean.</p>
+    </section>
+
+    <section class="frame" data-title="The suite">
+      <h2>The benchmark suite, and its churn</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>MMLU launched 2020 with GPT-3 at 44%. By 2024 frontier models
+          were at ~90% and the field minted MMLU-Pro and GPQA to get
+          headroom back — benchmark half-life is now ~2 years.</p>
+      </aside>
+      <p>Knowledge (MMLU), reasoning (GSM8K→MATH→GPQA), code
+        (HumanEval→SWE-bench), safety — the suite keeps getting
+        replaced as models saturate it. The panel traces a benchmark's
+        life: launch → climb → saturate → retire.</p>
+    </section>
+
+    <section class="frame" data-title="Judges">
+      <h2>When there's no answer key: judges</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Chatbot Arena is the workaround for un-scorable tasks:
+          humans vote pairwise on anonymous answers, and Elo does the
+          rest — the closest thing the field has to a taste
+          measurement.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="llm-as-judge">LLM-as-judge</a> scaled
+          the same trick: a strong model grades the answer. Fast and
+          cheap — but judges prefer verbosity, their own family's
+          style, and confident nonsense phrased well.</p>
+      </aside>
+      <p>Open-ended capability (writing, analysis, agent trajectories)
+        has no answer key — so evaluation itself became a modeling
+        problem.</p>
+    </section>
+
+    <section class="frame" data-title="Reading scores">
+      <h2>How to read a headline number</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The same model's score can swing 5+ points on prompt format,
+          few-shot choice, and answer extraction — reproducibility in
+          evals is a real research area, not a footnote.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The checklist when you see a number: was the test set
+          <a data-concept-link="benchmark-contamination">contaminated</a>?
+          Self-reported or third-party? Few-shot? Judge model? Which
+          version of the suite?</p>
+      </aside>
+      <p>Evals measure a distribution of behaviours, not a point — the
+        honest summary is a procedure, not a score.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: benchmark saturation curve — score vs year, plateau at ~90
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 30, PY = 150, PW = 260, PH = 115;
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+    const SCORE = [44, 50, 62, 75, 86, 89, 90]; // MMLU-style saturation
+    const toX = i => PX + (i / 6) * PW;
+    const toY = s => PY - ((s - 40) / 55) * PH;
+    const line = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: "" });
+    const dot = el("circle", { r: 4.5, fill: "#f0883e" });
+    svg.appendChild(line); svg.appendChild(dot);
+    const cap = el("line", { x1: PX, y1: toY(90), x2: PX + PW, y2: toY(90),
+      stroke: "#f85149", "stroke-dasharray": "5 4" });
+    svg.appendChild(cap);
+    const ct = el("text", { x: PX + 4, y: toY(90) - 5, "font-size": 9,
+      fill: "#f85149" });
+    ct.textContent = "saturation ≈90%"; svg.appendChild(ct);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      const pts = SCORE.slice(0, i + 1).map((s, j) =>
+        `${toX(j)},${toY(s)}`).join(" ");
+      line.setAttribute("points", pts);
+      dot.setAttribute("cx", toX(i)); dot.setAttribute("cy", toY(SCORE[i]));
+      lab.textContent = YEARS[i];
+      info.textContent = `${YEARS[i]}: frontier ≈ ${SCORE[i]}% — ${i < 4 ? "still informative" : "saturated; the field mints a harder successor"}.`;
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 7; paint(i); };
+    const start = () => { timer = setInterval(tick, 1100); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

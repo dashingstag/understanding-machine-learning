@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pretraining · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="pretraining" data-page-id="pretraining" data-root="../../">
+  <header class="top">
+    <h1>Pretraining</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Next-token prediction and masked objectives over trillion-token corpora: data curation, stability, what is actually learned.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="weights-theta"></span> <span data-notation="n-params"></span> <span data-notation="compute-c"></span> <span data-notation="data-d"></span> <span data-notation="perplexity-s"></span></p>
+    <h2>Statement</h2>
+    <p>Self-supervised training of a <a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> on <code>training-data</code> at trillion-token scale with the <code>next-token-prediction</code> objective — one <a class="doc-concept" href="../../site/notation.html#cross-entropy"><code>cross-entropy</code></a> term per position. The run consumes <code data-notation="compute-c">compute-c</code> FLOPs, produces the base model every later stage (<a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a>, <code>knowledge-distillation</code>) assumes, and is where <a class="doc-concept" href="../../concepts/scaling-laws/playback.html"><code>scaling-laws</code></a> do their forecasting.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — pretraining is where almost all capability enters: post-training shapes behaviour but the knowledge, grammar and latent reasoning are installed here. It's also ~95% of the training compute bill — the stage <a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a> exists to run.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Objective.</strong> <code>next-token-prediction</code> — <a class="doc-concept" href="../../site/notation.html#cross-entropy"><code>cross-entropy</code></a> on the model's <code data-notation="logits-z">logits-z</code> at every position; <code data-notation="perplexity-s">perplexity-s</code> is its readable form (<a class="doc-concept" href="../../site/notation.html#ppl"><code>ppl</code></a>).</li>
+    <li><strong>Data.</strong> <code>training-data</code> — curation, dedup, filtering, mixing ratios; half the capability story is corpus design.</li>
+    <li><strong>Compute.</strong> <a class="doc-concept" href="../../site/notation.html#flops-6nd"><code>flops-6nd</code></a> — a full pass ≈ $6ND$ FLOPs for <code data-notation="n-params">n-params</code> $N$, tokens $D$; at $N = 10^{11}$, $D = 10^{13}$ that's $6\times10^{24}$ — weeks on thousands of GPUs (<a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a>).</li>
+    <li><strong>Stability.</strong> Loss spikes, gradient explosions, hardware failures — the run is babysat via <code data-notation="learning-rate">learning-rate</code> schedules, checkpointing, gradient clipping.</li>
+    <li><strong>What emerges.</strong> Grammar first, then facts, then patterns researchers call <code>emergent-abilities</code> — capabilities that appear abruptly with scale (<a class="doc-concept" href="../../concepts/scaling-laws/playback.html"><code>scaling-laws</code></a> frames the debate).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Chinchilla-optimal sizing: <code>chinchilla</code> says $D \approx 20N$ tokens per parameter. For $N = 7$B: $D \approx 140$B tokens.</p>
+    <ul>
+    <li>FLOPs ≈ $6 \cdot 7{\times}10^{9} \cdot 1.4{\times}10^{11} \approx 5.9\times10^{21}$.</li>
+    <li>On 1,000 A100s at ~40% MFU (~120 TFLOP/s each): ≈ $1.6\times10^{7}$ s ≈ 190 GPU·days → ~6 days wall-clock.</li>
+    <li>GPT-2-scale check ($N{=}124$M): optimal $D \approx 2.5$B tokens — tiny; the field overshoots (trains longer) for inference economics.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Radford et al., GPT-2 report (2019); Brown et al., GPT-3 — <a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">arXiv:2005.14165</a></li>
+    <li>Hoffmann et al., <em>Chinchilla</em> — <a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">arXiv:2203.15556</a></li>
+    <li>Gao et al., <em>The Pile</em> — <a href="https://arxiv.org/abs/2101.00027" target="_blank" rel="noopener">arXiv:2101.00027</a></li>
+    <li>Touvron et al., LLaMA — <a href="https://arxiv.org/abs/2302.13971" target="_blank" rel="noopener">arXiv:2302.13971</a></li>
+    <li>Karpathy, <em>Let's reproduce GPT-2</em> — <a href="https://www.youtube.com/watch?v=l8pRSuU81PU" target="_blank" rel="noopener">youtu.be/l8pRSuU81PU</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Data wall: high-quality public text ≈ tens of trillions of tokens — does synthetic data (<code>training-data</code>) extend the curve or collapse it?</li>
+    <li>How much of "emergence" is metric discontinuity vs real phase change? — <code>emergent-abilities</code> / <a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> thread.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

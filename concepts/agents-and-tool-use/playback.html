@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agents and tool use · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="agents-and-tool-use" data-page-id="agents-and-tool-use" data-root="../../">
+  <header class="top">
+    <h1>Agents and tool use</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>The loop, live</h3>
+    <svg id="anim" viewBox="0 0 300 210"></svg>
+    <label>phase: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="3" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Model → agent">
+      <h2>Model → agent</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>ReAct (Yao et al. 2022) noticed the trick first: interleave
+          "thought" and "action" tokens and a text model becomes a
+          controller — the thought is a scratchpad, the action is a tool
+          call. Most of 2026's agent products are this pattern, scaled.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Coding agents resolve GitHub issues, computer-use agents drive
+          desktops, deep-research agents browse for an hour. The product
+          isn't a completion — it's the loop.</p>
+      </aside>
+      <p>A single completion is a function call; an agent is a control
+        loop — <a data-concept-link="agent-loop">perceive, plan, act,
+        observe, repeat</a>. The LLM is the component inside, not the
+        system.</p>
+    </section>
+
+    <section class="frame" data-title="Tools">
+      <h2>Acts are tool calls</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Every tool call is just tokens: the model emits a JSON-shaped
+          completion, a wrapper parses it, the world executes it, and
+          the result re-enters context as more tokens. Agency is an I/O
+          convention — <a data-concept-link="tool-calling">details</a>.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="mcp-protocol">MCP</a> standardized the
+          socket: one protocol, any tool server — file systems, GitHub,
+          databases, browsers. The agent/tool market runs on it.</p>
+      </aside>
+      <p>Search, code execution, file IO, APIs — each a schema'd
+        function. The model chooses name + arguments; everything after
+        is ordinary software.</p>
+    </section>
+
+    <section class="frame" data-title="Context as state">
+      <h2>The context is the state</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>An agent's "memory" is literally its context window — plans,
+          tool results, errors all live as tokens. Compaction (summarize
+          and drop) is garbage collection by prompt.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Long-horizon tasks fill the window: the loop must decide what
+          to keep — scratchpads, summaries, and
+          <a data-concept-link="retrieval-augmented-generation">RAG</a>
+          are the standard answers.</p>
+      </aside>
+      <p>Each observation is appended; the model re-plans on the whole
+        history. Reasoning traces (<a data-concept-link="chain-of-thought">CoT</a>)
+        double as plans — thinking and acting share the same tokens.</p>
+    </section>
+
+    <section class="frame" data-title="Where it breaks">
+      <h2>Where loops break</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>A 95%-per-step agent has ~36% success over 50 steps — errors
+          compound multiplicatively, which is why verifiable checkpoints
+          and retries are the engineering, not an add-on.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Prompt injection through tool results — a web page or email
+          that hijacks the agent mid-loop — is the defining security
+          problem of the agent era. See
+          <a data-concept-link="interpretability">safety</a>.</p>
+      </aside>
+      <p>Non-termination, tool hallucination, compounding error — agent
+        reliability is mostly loop engineering, not model quality.
+        Benchmarks like SWE-bench score the *system*, model included.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: the 4-phase agent loop as a cycle; scrub highlights phase
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PH = [
+      ["perceive", "read the context — task + tool results so far", 150, 40],
+      ["plan", "reason about the next move (CoT as scratchpad)", 235, 110],
+      ["act", "emit a tool call — name + JSON args", 150, 180],
+      ["observe", "result returns as tokens → context grows", 65, 110]
+    ];
+    const order = [0, 1, 2, 3];
+    PH.forEach(([s, , x, y], i) => {
+      svg.appendChild(el("rect", { x: x - 45, y: y - 14, width: 90,
+        height: 28, rx: 7, fill: "#161b22", stroke: "#30363d",
+        id: `ph${i}` }));
+      const t = el("text", { x, y: y + 4, "text-anchor": "middle",
+        "font-size": 10, fill: "#c9d1d9" });
+      t.textContent = s; svg.appendChild(t);
+    });
+    // cycle arrows
+    [[195, 40, 235, 96], [235, 124, 195, 180], [105, 180, 65, 124], [65, 96, 105, 40]]
+      .forEach(([x1, y1, x2, y2]) => {
+        svg.appendChild(el("line", { x1, y1, x2, y2, stroke: "#58a6ff",
+          "stroke-width": 1.5, "marker-end": "none" }));
+      });
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      PH.forEach((_, j) => {
+        const r = svg.getElementById(`ph${j}`);
+        const on = j === i;
+        r.setAttribute("stroke", on ? "#58a6ff" : "#30363d");
+        r.setAttribute("fill", on ? "#1c3550" : "#161b22");
+      });
+      lab.textContent = PH[i][0];
+      info.textContent = PH[i][1];
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 4; paint(i); };
+    const start = () => { timer = setInterval(tick, 1500); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

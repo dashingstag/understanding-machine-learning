@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>understanding-machine-learning · notation</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-page-id="notation" data-root="../">
+  <header class="top">
+    <h1>Notation</h1>
+    <nav><a href="index.html">Map</a></nav>
+    <span class="muted" id="stats"></span>
+  </header>
+
+  <main class="glossary">
+    <input type="search" id="filter" placeholder="Filter: a name, a word, or a symbol" autofocus>
+    <div id="toc" class="toc"></div>
+    <div id="entries"></div>
+  </main>
+
+  <script src="map.js"></script>
+  <script src="assets/page-id.js"></script>
+  <script src="notation-data.js"></script>
+  <script src="lore-data.js"></script>
+  <script src="assets/notation.js"></script>
+  <script src="assets/search.js"></script>
+  <script>
+    (function () {
+      const N = window.NOTATION, K = window.Notation;
+      const concepts = Object.fromEntries(window.CONCEPT_MAP.nodes.map((n) => [n.id, n]));
+
+      function conceptLink(id) {
+        const c = concepts[id];
+        if (!c) return "";
+        const target = c.playback || c.page;
+        return `<span class="muted">Concept:</span> ${target ? `<a href="../${target}">${c.title}</a>` : c.title}`;
+      }
+      function usedOn(id) {
+        const pages = N.used[id] || [];
+        return pages.length
+          ? `<span class="muted">Used on:</span> ${pages.map((p) => `<a href="../${p}">${p.replace(/^concepts\//, "")}</a>`).join(", ")}`
+          : `<span class="muted">Not used on any page yet.</span>`;
+      }
+      const meta = (x) => `<p class="entry-meta">${[conceptLink(x.concept), usedOn(x.id)].filter(Boolean).join(" · ")}</p>`;
+      const text = (x) => Object.values(x).flat().map((v) => (typeof v === "object" ? Object.values(v).join(" ") : v)).join(" ").toLowerCase();
+
+      const groups = [["Formulas", N.formulas.map((f) => ({ x: f, html: K.formulaCard(f.id, { open: true, link: false }) }))]];
+      const categories = [...new Set(N.symbols.map((s) => s.category))];
+      for (const cat of categories) {
+        groups.push([cat, N.symbols.filter((s) => s.category === cat).map((s) => ({ x: s, html: K.symbolCard(s.id, { full: true }) }))]);
+      }
+      const slug = (s) => "cat-" + s.toLowerCase().replace(/[^a-z]+/g, "-");
+      document.getElementById("toc").innerHTML = groups.map(([g, items]) => `<a href="#${slug(g)}">${g} (${items.length})</a>`).join("");
+      document.getElementById("entries").innerHTML = groups
+        .map(([g, items]) =>
+          `<section class="group" id="${slug(g)}"><h2>${g}</h2>` +
+          items.map(({ x, html }) => `<article class="entry" id="${x.id}" data-search="${text(x).replace(/"/g, "&quot;")}">${html}${meta(x)}</article>`).join("") +
+          `</section>`)
+        .join("");
+      document.getElementById("stats").textContent = `${N.symbols.length} symbols · ${N.formulas.length} formulas`;
+
+      document.getElementById("filter").addEventListener("input", (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll(".entry").forEach((el) => (el.hidden = q && !el.dataset.search.includes(q)));
+        document.querySelectorAll(".group").forEach((g) => (g.hidden = ![...g.querySelectorAll(".entry")].some((el) => !el.hidden)));
+      });
+
+      window.addEventListener("load", () => {
+        K.renderMath(document.getElementById("entries"));
+        if (location.hash) {
+          const el = document.getElementById(location.hash.slice(1));
+          if (el) { el.classList.add("target"); el.scrollIntoView(); }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

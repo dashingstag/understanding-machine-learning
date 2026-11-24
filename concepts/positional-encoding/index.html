@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Positional encoding · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="positional-encoding" data-page-id="positional-encoding" data-root="../../">
+  <header class="top">
+    <h1>Positional encoding</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Injecting order into a permutation-blind architecture — sinusoids, learned positions, RoPE and its variants.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="query-matrix"></span> <span data-notation="key-matrix"></span></p>
+    <h2>Statement</h2>
+    <p>Self-attention is permutation-invariant: shuffle the input and every output row shuffles with it — nothing marks "first" or "after". Positional encoding injects order, either by adding position vectors to <code data-notation="embed-e">embed-e</code> (sinusoidal/learned, Vaswani et al. 2017) or by rotating <code data-notation="query-matrix">query-matrix</code>/<code data-notation="key-matrix">key-matrix</code> pairs as a function of position (RoPE, Su et al. 2021), which makes attention scores depend on <em>relative</em> distance.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> — without position, the stack is a bag-of-words machine: "dog bites man" ≡ "man bites dog". RoPE specifically is why modern models can extend context (YaRN, NTK scaling) — the encoding family decides length-extrapolation behaviour.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The problem.</strong> Attention compares all pairs symmetrically; order must enter as <em>data</em>, not structure.</li>
+    <li><strong>Absolute methods.</strong> Sinusoidal $PE_{(pos,2i)} = \sin(pos/10000^{2i/d})$ — fixed, frequency-spaced; learned position embeddings — trainable but capped at train-time max length.</li>
+    <li><strong>Relative methods.</strong> What attention wants is distance $m-n$, not addresses. RoPE rotates each 2-D slice of $\mathbf{q}_m,\mathbf{k}_n$ by angle $m\theta_i$, so $\mathbf{q}_m^\top\mathbf{k}_n$ becomes a function of $(m-n)$ — free, parameterless, and composable with <a class="doc-concept" href="../../concepts/attention-mechanism/playback.html"><code>attention-mechanism</code></a> unchanged.</li>
+    <li><strong>Length extrapolation.</strong> Models trained at 4k fail at 100k — frequencies hit unseen phases. Fixes: position interpolation, NTK/YaRN frequency rescaling — the engineering behind "1M context" claims (<a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a>).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>RoPE on a 2-D pair $(q_1, q_2)$ at position $m$: rotation matrix $R_{m\theta}$ maps $q \mapsto (q_1\cos m\theta - q_2\sin m\theta,\; q_1\sin m\theta + q_2\cos m\theta)$. Then $\mathbf{q}_m^\top \mathbf{k}_n = \mathbf{q}^\top R_{(m-n)\theta}\,\mathbf{k}$ — depends only on the <em>offset</em>. With $\theta = 1$: tokens 5 apart always produce the same relative rotation regardless of where in the sequence they sit.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Vaswani et al., <em>Attention Is All You Need</em>, §3.5 — <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arXiv:1706.03762</a></li>
+    <li>Su et al., <em>RoFormer: Rotary Position Embedding</em> — <a href="https://arxiv.org/abs/2104.09864" target="_blank" rel="noopener">arXiv:2104.09864</a></li>
+    <li>Peng et al., <em>YaRN: Efficient Context Window Extension</em> — <a href="https://arxiv.org/abs/2309.00071" target="_blank" rel="noopener">arXiv:2309.00071</a></li>
+    <li>Press et al., <em>ALiBi</em> — <a href="https://arxiv.org/abs/2108.12409" target="_blank" rel="noopener">arXiv:2108.12409</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Do models use position semantically ("earlier in the document") or just mechanically? — connects to <code>lost-in-middle</code> and <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

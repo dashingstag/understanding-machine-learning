@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interpretability · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="interpretability" data-page-id="interpretability" data-root="../../">
+  <header class="top">
+    <h1>Interpretability and safety</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Superposition → features</h3>
+    <svg id="anim" viewBox="0 0 300 190"></svg>
+    <label>features found: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="5" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The audit problem">
+      <h2>We ship systems we can't audit</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="olah">Chris Olah</span> built Anthropic's
+          interpretability program on a wager: if you can find real
+          features inside the model, alignment becomes engineering
+          instead of hope.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Frontier models make legal, medical and financial claims —
+          with internals nobody can read. Interpretability is the only
+          field asking "what did it actually compute?" instead of
+          "what did it output?"</p>
+      </aside>
+      <p>Everything else on this map asks what a model does. This page
+        asks what it <em>is</em>: which directions in which layers mean
+        "this is a request to hack something" — and whether such
+        directions exist at all.</p>
+    </section>
+
+    <section class="frame" data-title="Superposition">
+      <h2>Why neurons can't be read</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>One neuron fires for French text, Python syntax and open
+          parentheses — models pack more concepts than they have
+          neurons by storing features in overlapping directions:
+          superposition.</p>
+      </aside>
+      <p>The naive approach — name each neuron — died immediately:
+          individual units are polysemantic. The fix is
+          <a data-concept-link="sparse-autoencoders">sparse
+          autoencoders</a>: learn a bigger dictionary in which
+          features are single-purpose — the panel shows soup
+          separating into features.</p>
+    </section>
+
+    <section class="frame" data-title="Read">
+      <h2>The instruments: probes, lenses, circuits</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Induction heads — attention heads that copy "[A][B] … [A]
+          → [B]" — were causally verified as in-context learning's
+          mechanism (Olsson et al. 2022): ablate them and ICL
+          collapses. Proof that real mechanisms exist.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="probing">Probing</a> asks "does layer N
+          encode X?" (cheap, correlational); the
+          <a data-concept-link="unembedding">logit lens</a> asks "what
+          would the head say now?"; circuit analysis asks "which parts
+          compute it?" — three instruments, three different claims.</p>
+      </aside>
+      <p>Correlational instruments (probes) map where information
+        lives; causal instruments (ablations, patches) test whether
+        it's actually used — the distinction that makes a finding real.</p>
+    </section>
+
+    <section class="frame" data-title="Steer">
+      <h2>Steering: interpretation you can push on</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Anthropic's "Golden Gate Claude" added a found feature's
+          direction to every forward pass — the model answered every
+          question about the Golden Gate Bridge. Absurd, and proof that
+          features are levers: <a data-concept-link="activation-steering">activation
+          steering</a>.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Safety uses: honesty/sycophancy directions, deception
+          detection, unfaithful-CoT alarms — reading the machine is the
+          audit; editing it is the control. Both ride on the
+          <a data-concept-link="residual-normalization">residual
+          stream</a>.</p>
+      </aside>
+      <p>The causal test of a claimed feature: does pushing it change
+        behaviour? If yes, the feature is a mechanism, not a
+        correlation — and potentially a control.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: neurons firing mixed patterns -> SAE features lighting up
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const FEATS = ["French", "code", "parens", "numbers", "negation"];
+    // 6 neurons each firing on mixed subsets (superposed)
+    const MIX = [[0,2],[1,3],[0,1],[2,4],[1,4],[0,3]];
+    for (let n = 0; n < 6; n++) {
+      svg.appendChild(el("circle", { cx: 50, cy: 25 + n * 28, r: 10,
+        fill: "#161b22", stroke: "#30363d", id: `n${n}` }));
+    }
+    const saeT = el("text", { x: 235, y: 12, "font-size": 10,
+      fill: "#f0883e", "text-anchor": "middle" });
+    saeT.textContent = "SAE"; svg.appendChild(saeT);
+    FEATS.forEach((f, i) => {
+      svg.appendChild(el("rect", { x: 190, y: 18 + i * 32, width: 90,
+        height: 22, rx: 5, fill: "#161b22", stroke: "#30363d",
+        id: `f${i}` }));
+      const t = el("text", { x: 235, y: 33 + i * 32,
+        "text-anchor": "middle", "font-size": 9, fill: "#9aa" });
+      t.textContent = f; svg.appendChild(t);
+    });
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    const wires = [];
+    function paint(k) {
+      wires.forEach(w => w.remove()); wires.length = 0;
+      for (let n = 0; n < 6; n++) {
+        const on = MIX[n].some(f => f < k);
+        svg.getElementById(`n${n}`).setAttribute("fill",
+          on ? "#3a2a10" : "#161b22");
+      }
+      for (let f = 0; f < 5; f++) {
+        const r = svg.getElementById(`f${f}`);
+        const on = f < k;
+        r.setAttribute("fill", on ? "#1c3550" : "#161b22");
+        r.setAttribute("stroke", on ? "#58a6ff" : "#30363d");
+        if (on) {
+          // wires from the neurons that contain this feature
+          MIX.forEach((ms, n) => { if (ms.includes(f)) {
+            const w = el("line", { x1: 60, y1: 25 + n * 28,
+              x2: 190, y2: 29 + f * 32, stroke: "#f0883e",
+              "stroke-width": 1.2 });
+            svg.appendChild(w); wires.push(w);
+          }});
+        }
+      }
+      lab.textContent = k;
+      info.textContent = k === 0
+        ? "6 neurons, each a mixture — nothing is named yet."
+        : `${k} feature${k>1?"s":""} isolated — the SAE reads which neurons' overlap encodes it.`;
+      scrub.value = k;
+    }
+    let k = 0, timer;
+    const tick = () => { k = (k + 1) % 6; paint(k); };
+    const start = () => { timer = setInterval(tick, 1500); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); k = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

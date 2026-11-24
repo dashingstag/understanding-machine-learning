@@ -1,0 +1,723 @@
+{
+  "symbols": [
+    {
+      "id": "query-matrix",
+      "tex": "\\mathbf{Q}",
+      "name": "query matrix",
+      "say": "Q",
+      "category": "Attention",
+      "meaning": "The learned 'what am I looking for?' projection of the inputs.",
+      "explanation": "Each row q_i = x_i·W^Q is one token's question: which tokens are relevant to me? Easy misreading: Q is not stored state — it is recomputed each forward pass from X and the fixed weights W^Q.",
+      "example": "In 'the cat sat', the query row for 'sat' is the vector that will score how much it should look at 'cat' vs 'the'.",
+      "concept": "attention-mechanism",
+      "see": ["key-matrix", "value-matrix"]
+    },
+    {
+      "id": "key-matrix",
+      "tex": "\\mathbf{K}",
+      "name": "key matrix",
+      "say": "K",
+      "category": "Attention",
+      "meaning": "The learned 'what do I offer to be found by?' projection of the inputs.",
+      "explanation": "Each row k_j = x_j·W^K advertises token j's content. The dot product q_i·k_j is token i's raw interest in token j — high when what i seeks matches what j advertises.",
+      "concept": "attention-mechanism",
+      "see": ["query-matrix", "value-matrix"]
+    },
+    {
+      "id": "value-matrix",
+      "tex": "\\mathbf{V}",
+      "name": "value matrix",
+      "say": "V",
+      "category": "Attention",
+      "meaning": "The learned 'what do I actually pass on?' projection of the inputs.",
+      "explanation": "Each row v_j = x_j·W^V is the content token j contributes when attended. Attention weights mix the V rows — what flows downstream is a blend of contents, selected by Q·K but carrying V.",
+      "concept": "attention-mechanism",
+      "see": ["query-matrix", "key-matrix"]
+    },
+    {
+      "id": "key-dim",
+      "tex": "d_k",
+      "name": "key dimension",
+      "say": "d sub k",
+      "category": "Attention",
+      "meaning": "Dimension of the query and key vectors inside one attention head.",
+      "explanation": "Typical head size is 64–128. Scores are divided by √d_k to keep their variance near 1: for large d_k, dot products grow with the dimension and push softmax to near one-hot, shrinking gradients (Vaswani et al. 2017, §3.2.1).",
+      "concept": "attention-mechanism",
+      "see": ["softmax-sym"]
+    },
+    {
+      "id": "softmax-sym",
+      "tex": "\\mathrm{softmax}",
+      "name": "softmax",
+      "say": "soft-max",
+      "category": "Probability",
+      "meaning": "Converts a vector of scores into weights that sum to 1.",
+      "explanation": "Applied row-wise over the score matrix. Very sensitive to scale: multiplying inputs by ~4 pushes output near one-hot — which is exactly why attention divides by √d_k first.",
+      "example": "softmax([1, 2, 3]) ≈ [0.09, 0.24, 0.67].",
+      "see": ["logits-z", "key-dim"]
+    },
+    {
+      "id": "weights-theta",
+      "tex": "\\theta",
+      "name": "model parameters",
+      "say": "theta",
+      "category": "Training",
+      "meaning": "Every learned weight in the network, collected into one vector.",
+      "explanation": "Attention's W^Q, W^K, W^V live inside θ and are learned by gradient descent during training — they are fixed at inference, not chosen per token.",
+      "concept": "gradient-descent",
+      "see": ["loss-l", "learning-rate"]
+    },
+    {
+      "id": "logits-z",
+      "tex": "\\mathbf{z}",
+      "name": "logits",
+      "say": "z",
+      "category": "Probability",
+      "meaning": "Raw, unnormalised scores before a softmax.",
+      "explanation": "Can be any real number, positive or negative. In attention, the scaled scores q_i·k_j/√d_k are per-row logits; at a model's output layer, logits become next-token probabilities via softmax.",
+      "see": ["softmax-sym"]
+    },
+    {
+      "id": "learning-rate",
+      "tex": "\\eta",
+      "name": "learning rate",
+      "say": "eta",
+      "category": "Training",
+      "meaning": "Step size multiplying the gradient at each parameter update.",
+      "explanation": "Too large and training diverges; too small and nothing converges within budget. Modern runs schedule it — short warmup, then decay (cosine or linear).",
+      "concept": "gradient-descent",
+      "see": ["weights-theta", "loss-l"]
+    },
+    {
+      "id": "loss-l",
+      "tex": "\\mathcal{L}",
+      "name": "loss",
+      "say": "L",
+      "category": "Training",
+      "meaning": "The scalar being minimised — e.g. mean cross-entropy over predicted tokens.",
+      "explanation": "A single number per step; the whole of training is θ ← θ − η∇L(θ) repeated trillions of times. Watch units: papers report loss in nats (ln) or bits (log₂).",
+      "concept": "pretraining",
+      "see": ["weights-theta", "learning-rate"]
+    },
+    {
+      "id": "n-params",
+      "tex": "N",
+      "name": "parameter count",
+      "say": "N",
+      "category": "Scaling",
+      "meaning": "The number of learned weights — the headline '7B model' number.",
+      "explanation": "Counts only model parameters, not data or compute. Easy misreading: 'bigger model' claims may count all parameters in a MoE (total) or only active ones — check which.",
+      "concept": "scaling-laws",
+      "see": ["data-d", "compute-c"]
+    },
+    {
+      "id": "data-d",
+      "tex": "D",
+      "name": "training tokens",
+      "say": "D",
+      "category": "Scaling",
+      "meaning": "How many tokens the model sees over a training run.",
+      "explanation": "Chinchilla pairs D with N: compute-optimal is roughly D ≈ 20N for dense models. Not the same as dataset size — epochs can multiply the count.",
+      "concept": "scaling-laws",
+      "see": ["n-params", "compute-c"]
+    },
+    {
+      "id": "compute-c",
+      "tex": "C",
+      "name": "compute budget",
+      "say": "C",
+      "category": "Scaling",
+      "meaning": "Total floating-point operations spent — the actual scarce resource.",
+      "explanation": "For transformer training, C ≈ 6ND (3 matmul directions × 2 FLOPs). Inference and test-time compute are separate budgets with the same units.",
+      "concept": "scaling-laws",
+      "see": ["n-params", "data-d", "flop"]
+    },
+    {
+      "id": "flop",
+      "tex": "\\mathrm{FLOP}",
+      "name": "floating-point operation",
+      "say": "flop",
+      "category": "Scaling",
+      "meaning": "One multiply or add — the atom of compute accounting.",
+      "explanation": "FLOPs count work done; FLOP/s (per second) is throughput. Clusters are bought in FLOP/s, runs are priced in FLOPs.",
+      "concept": "distributed-training",
+      "see": ["compute-c"]
+    },
+    {
+      "id": "d-model",
+      "tex": "d_{\\text{model}}",
+      "name": "model width",
+      "say": "d model",
+      "category": "Architecture",
+      "meaning": "The width of the residual stream — the size of every token's vector inside the stack.",
+      "explanation": "512 in the original transformer; 4096–16384 in frontier models. Most projections map d_model→d_k or d_model→4·d_model (the FFN expansion).",
+      "concept": "transformer-architecture",
+      "see": ["key-dim", "unembed-w"]
+    },
+    {
+      "id": "vocab",
+      "tex": "|\\mathcal{V}|",
+      "name": "vocabulary size",
+      "say": "vocab",
+      "category": "Tokenization",
+      "meaning": "The number of distinct token ids the model can emit.",
+      "explanation": "Typically 32k–256k. Larger vocabulary → shorter sequences (fewer tokens per byte) but a bigger embedding table and softmax.",
+      "concept": "tokenization",
+      "see": ["embed-e", "unembed-w"]
+    },
+    {
+      "id": "embed-e",
+      "tex": "\\mathbf{e}_i",
+      "name": "embedding vector",
+      "say": "e sub i",
+      "category": "Embeddings",
+      "meaning": "The dense vector the model attaches to token (or item) i.",
+      "explanation": "Row i of the embedding table. Distances and directions between e-vectors carry learned meaning — the geometry the rest of the model builds on.",
+      "concept": "embeddings",
+      "see": ["cosine-s", "vocab"]
+    },
+    {
+      "id": "cosine-s",
+      "tex": "\\cos(\\mathbf{u},\\mathbf{v})",
+      "name": "cosine similarity",
+      "say": "cosine similarity",
+      "category": "Embeddings",
+      "meaning": "Angle-based closeness of two vectors: 1 = same direction, 0 = orthogonal, −1 = opposite.",
+      "explanation": "Ignores magnitude, reads direction — the default metric for 'how similar are these embeddings'. Easy misreading: high cosine ≠ identical meaning, only aligned direction.",
+      "example": "cos(king, queen) ≈ high; cos(king, refrigerator) ≈ 0.",
+      "concept": "embeddings",
+      "see": ["embed-e"]
+    },
+    {
+      "id": "temperature",
+      "tex": "T",
+      "name": "temperature",
+      "say": "temperature",
+      "category": "Probability",
+      "meaning": "The logit scale applied before a softmax: T<1 sharpens, T>1 flattens.",
+      "explanation": "In sampling, logits are divided by T. Attention's 1/√d_k is the same move in reverse — a fixed cool-down. Not to be confused with diffusion's timestep t.",
+      "concept": "inference-efficiency",
+      "see": ["softmax-sym", "logits-z"]
+    },
+    {
+      "id": "perplexity-s",
+      "tex": "\\mathrm{PPL}",
+      "name": "perplexity",
+      "say": "perplexity",
+      "category": "Evaluation",
+      "meaning": "e raised to the mean token loss — the 'effective branching factor' of the model's uncertainty.",
+      "explanation": "Lower is better; PPL 10 ≈ model is as uncertain as a 10-way uniform guess per token. Sensitive to tokenization — only compare within the same tokenizer.",
+      "concept": "evaluation",
+      "see": ["loss-l"]
+    },
+    {
+      "id": "reward-r",
+      "tex": "r",
+      "name": "reward",
+      "say": "r",
+      "category": "Reinforcement",
+      "meaning": "The scalar a policy is optimized to maximize — from a reward model or a verifier.",
+      "explanation": "Whatever produces r defines what 'good' means; a flawed reward gets hacked. Human preference → learned reward model; math/code → automatic verifier.",
+      "concept": "reward-models",
+      "see": ["pi-policy", "kl-div"]
+    },
+    {
+      "id": "pi-policy",
+      "tex": "\\pi_\\theta",
+      "name": "policy",
+      "say": "pi theta",
+      "category": "Reinforcement",
+      "meaning": "The model viewed as a distribution over actions — here, over next tokens.",
+      "explanation": "RL fine-tuning treats generation as acting: π_θ(y|x) is the probability of emitting continuation y. π_ref is the frozen pre-RL copy used for the KL tether.",
+      "concept": "rlhf",
+      "see": ["reward-r", "kl-div", "beta"]
+    },
+    {
+      "id": "kl-div",
+      "tex": "D_{\\mathrm{KL}}",
+      "name": "KL divergence",
+      "say": "K L divergence",
+      "category": "Reinforcement",
+      "meaning": "How far one distribution drifts from another — the leash keeping the tuned policy near the reference.",
+      "explanation": "Asymmetric: D_KL(π_θ‖π_ref) ≠ D_KL(π_ref‖π_θ). In RLHF it punishes drifting from the base model — preventing reward-chasing gibberish.",
+      "concept": "rlhf",
+      "see": ["pi-policy", "beta"]
+    },
+    {
+      "id": "beta",
+      "tex": "\\beta",
+      "name": "KL penalty strength",
+      "say": "beta",
+      "category": "Reinforcement",
+      "meaning": "The coefficient weighing reward against staying near the reference policy.",
+      "explanation": "Small β → reward wins, policy drifts (risk: hacked, weird text). Large β → the model barely changes. In DPO it plays the same tethering role implicitly.",
+      "concept": "rlhf",
+      "see": ["kl-div", "pi-policy"]
+    },
+    {
+      "id": "eps-noise",
+      "tex": "\\varepsilon",
+      "name": "diffusion noise",
+      "say": "epsilon",
+      "category": "Diffusion",
+      "meaning": "The Gaussian noise added to data — and the quantity the model learns to predict.",
+      "explanation": "Training adds ε ~ N(0,I) at timestep t; the network ε_θ guesses it back. Sampling then removes it step by step. Symbol collision: ε also means 'small constant' elsewhere.",
+      "concept": "diffusion-models",
+      "see": ["x-t"]
+    },
+    {
+      "id": "x-t",
+      "tex": "x_t",
+      "name": "noised sample",
+      "say": "x sub t",
+      "category": "Diffusion",
+      "meaning": "The data at diffusion step t — x_0 is clean, x_T is ~pure noise.",
+      "explanation": "The forward process destroys structure: x_t = ᾱ_t x_0 + (noise). Generation reverses it, one denoising step at a time.",
+      "concept": "diffusion-models",
+      "see": ["eps-noise"]
+    },
+    {
+      "id": "gate-g",
+      "tex": "g_i(x)",
+      "name": "gate score",
+      "say": "g sub i",
+      "category": "Mixture of experts",
+      "meaning": "The router's score for expert i on token x — top-k experts get nonzero gates.",
+      "explanation": "Usually a softmax over a small learned projection; only the top-k entries are kept (others forced to zero). Load-balancing losses exist because g tends to collapse onto few experts.",
+      "concept": "expert-routing",
+      "see": []
+    },
+    {
+      "id": "layernorm-s",
+      "tex": "\\mathrm{LN}",
+      "name": "layer normalization",
+      "say": "layer norm",
+      "category": "Architecture",
+      "meaning": "Per-token re-centering and re-scaling of the residual stream before each sub-layer.",
+      "explanation": "Normalizes each position's vector to mean 0 / variance 1, then applies learned γ, β. Modern models use RMSNorm — drop the mean term, keep the scale.",
+      "concept": "residual-normalization",
+      "see": []
+    },
+    {
+      "id": "unembed-w",
+      "tex": "\\mathbf{W}_U",
+      "name": "unembedding matrix",
+      "say": "W U",
+      "category": "Architecture",
+      "meaning": "The |V|×d_model matrix scoring the final hidden state against every vocabulary row.",
+      "explanation": "Often 'tied' to the input embedding — the same table used transposed — which makes logit(v) literally a dot product with v's embedding direction.",
+      "concept": "unembedding",
+      "see": ["d-model", "vocab", "embed-e"]
+    },
+    {
+      "id": "sigma-act",
+      "tex": "\\sigma",
+      "name": "activation function",
+      "say": "sigma",
+      "category": "Architecture",
+      "meaning": "The element-wise nonlinearity inside the FFN (ReLU, GELU, SwiGLU).",
+      "explanation": "Without it, stacked linear layers collapse into one linear map — the nonlinearity is what makes depth add power. Symbol collision: σ is also standard-deviation and softmax's sigmoid elsewhere.",
+      "concept": "feedforward-layer",
+      "see": []
+    }
+  ],
+  "formulas": [
+    {
+      "id": "attn",
+      "tex": "\\mathrm{Attention}(\\mathbf{Q},\\mathbf{K},\\mathbf{V}) = \\mathrm{softmax}\\!\\left(\\frac{\\mathbf{Q}\\mathbf{K}^{\\top}}{\\sqrt{d_k}}\\right)\\mathbf{V}",
+      "name": "Scaled dot-product attention",
+      "say": "softmax of Q K transpose over root d-k, times V",
+      "meaning": "Every output token is a weighted blend of the value vectors, with weights from query–key similarity.",
+      "parts": [
+        {
+          "tex": "\\mathbf{Q}\\mathbf{K}^{\\top}",
+          "explain": "Score matrix: entry (i,j) is token i's query dotted with token j's key — raw relevance.",
+          "symbol": "query-matrix"
+        },
+        {
+          "tex": "\\sqrt{d_k}",
+          "explain": "Scale: keeps score variance near 1 so softmax stays in its soft, gradient-friendly regime.",
+          "symbol": "key-dim"
+        },
+        {
+          "tex": "\\mathrm{softmax}",
+          "explain": "Normalises each row of scores into weights summing to 1.",
+          "symbol": "softmax-sym"
+        },
+        {
+          "tex": "\\mathbf{V}",
+          "explain": "Value vectors — the content actually blended by the weights.",
+          "symbol": "value-matrix"
+        }
+      ],
+      "concept": "attention-mechanism",
+      "conditions": "Softmax is row-wise. With a causal mask, scores to future tokens are set to −∞ before the softmax (decoder self-attention).",
+      "source": "Vaswani et al., Attention Is All You Need, NeurIPS 2017, §3.2.1 (arXiv:1706.03762)"
+    },
+    {
+      "id": "multi-head",
+      "tex": "\\mathrm{MultiHead}(\\mathbf{Q},\\mathbf{K},\\mathbf{V}) = \\mathrm{Concat}(\\mathrm{head}_1,\\dots,\\mathrm{head}_h)\\,\\mathbf{W}^{O}",
+      "name": "Multi-head attention",
+      "say": "concat the heads, times W-O",
+      "meaning": "Run h attention operations in parallel with different projections, concatenate, project again — different heads learn different relation types.",
+      "parts": [
+        {
+          "tex": "\\mathrm{head}_i = \\mathrm{Attention}(\\mathbf{Q}\\mathbf{W}_i^{Q}, \\mathbf{K}\\mathbf{W}_i^{K}, \\mathbf{V}\\mathbf{W}_i^{V})",
+          "explain": "Each head sees the input through its own Q/K/V projections."
+        },
+        {
+          "tex": "\\mathbf{W}^{O}",
+          "explain": "Output projection mixing the concatenated heads back to model width."
+        }
+      ],
+      "concept": "attention-mechanism",
+      "conditions": "Original transformer: h = 8 heads, d_k = d_v = 64 with d_model = 512.",
+      "source": "Vaswani et al., Attention Is All You Need, NeurIPS 2017, §3.2.2 (arXiv:1706.03762)"
+    },
+    {
+      "id": "softmax",
+      "tex": "\\mathrm{softmax}(z_i) = \\frac{e^{z_i}}{\\sum_{j} e^{z_j}}",
+      "name": "Softmax",
+      "say": "e to the z-i over the sum of e to the z-j",
+      "meaning": "Exponentiate each score and divide by the total — a probability distribution over positions.",
+      "parts": [
+        {
+          "tex": "e^{z_i}",
+          "explain": "Positive unnormalised weight for score i.",
+          "symbol": "logits-z"
+        },
+        {
+          "tex": "\\sum_j e^{z_j}",
+          "explain": "Normaliser so the row sums to 1."
+        }
+      ],
+      "conditions": "Shift-invariant: softmax(z + c) = softmax(z); implementations subtract the max for numerical stability."
+    },
+    {
+      "id": "gd-update",
+      "tex": "\\theta \\leftarrow \\theta - \\eta\\,\\nabla_\\theta \\mathcal{L}(\\theta)",
+      "name": "Gradient descent update",
+      "say": "theta becomes theta minus eta times the gradient of L",
+      "meaning": "Step each parameter opposite the loss gradient, scaled by the learning rate.",
+      "parts": [
+        {
+          "tex": "\\theta",
+          "explain": "All model parameters.",
+          "symbol": "weights-theta"
+        },
+        {
+          "tex": "\\eta",
+          "explain": "Learning rate — step size.",
+          "symbol": "learning-rate"
+        },
+        {
+          "tex": "\\nabla_\\theta \\mathcal{L}",
+          "explain": "Gradient of the loss — direction of steepest increase.",
+          "symbol": "loss-l"
+        }
+      ],
+      "concept": "gradient-descent",
+      "conditions": "Batch form; SGD and Adam are the stochastic/Adaptive variants used in practice."
+    },
+    {
+      "id": "cross-entropy",
+      "tex": "\\mathcal{L} = -\\sum_{t=1}^{T} \\log p_\\theta(x_t \\mid x_{<t})",
+      "name": "Next-token cross-entropy",
+      "say": "minus the sum over t of log p theta of x-t given the prefix",
+      "meaning": "The pretraining loss: penalise the model for the probability it failed to assign to each true next token.",
+      "parts": [
+        {
+          "tex": "p_\\theta(x_t \\mid x_{<t})",
+          "explain": "Probability the model gave the actual next token after the prefix.",
+          "symbol": "weights-theta"
+        },
+        {
+          "tex": "\\log",
+          "explain": "Log-loss: confident-and-wrong is punished far harder than unsure."
+        }
+      ],
+      "concept": "pretraining",
+      "conditions": "Autoregressive (causal) language modelling; masked objectives drop the x_{<t} conditioning.",
+      "source": "Standard — e.g. Radford et al., Improving Language Understanding by Generative Pre-Training (2018)."
+    },
+    {
+      "id": "transformer-block",
+      "tex": "x \\leftarrow x + \\mathrm{Attn}(\\mathrm{LN}(x)),\\quad x \\leftarrow x + \\mathrm{FFN}(\\mathrm{LN}(x))",
+      "name": "Transformer block (pre-norm)",
+      "say": "x plus attention of layernorm x, then x plus FFN of layernorm x",
+      "meaning": "One block: normalize, mix positions with attention, add back; normalize, transform per-position with the FFN, add back.",
+      "parts": [
+        {
+          "tex": "\\mathrm{LN}(x)",
+          "explain": "Normalize the residual stream before each sub-layer (pre-norm — the modern convention).",
+          "symbol": "layernorm-s"
+        },
+        {
+          "tex": "\\mathrm{Attn}",
+          "explain": "The only cross-position operation — multi-head self-attention.",
+          "symbol": "query-matrix"
+        },
+        {
+          "tex": "\\mathrm{FFN}",
+          "explain": "Per-position two-layer perceptron — most of the block's parameters.",
+          "symbol": "sigma-act"
+        },
+        {
+          "tex": "x + (\\cdot)",
+          "explain": "Residual add: the stream accumulates; nothing overwrites it."
+        }
+      ],
+      "concept": "transformer-architecture",
+      "conditions": "Pre-norm as in GPT-family; the 2017 original used post-norm.",
+      "source": "Vaswani et al. 2017 (post-norm); Radford et al. 2019 / GPT-2 (pre-norm)."
+    },
+    {
+      "id": "ffn",
+      "tex": "\\mathrm{FFN}(x) = \\mathbf{W}_2\\,\\sigma(\\mathbf{W}_1 x + \\mathbf{b}_1) + \\mathbf{b}_2",
+      "name": "Feed-forward network",
+      "say": "W-2 sigma of W-1 x plus b-1, plus b-2",
+      "meaning": "Expand each position's vector ~4×, apply a nonlinearity, project back — per position, no cross-token mixing.",
+      "parts": [
+        {
+          "tex": "\\mathbf{W}_1 x",
+          "explain": "Expansion: d_model → ~4·d_model.",
+          "symbol": "d-model"
+        },
+        {
+          "tex": "\\sigma",
+          "explain": "The nonlinearity (ReLU, GELU, SwiGLU) — without it the layer is linear.",
+          "symbol": "sigma-act"
+        },
+        {
+          "tex": "\\mathbf{W}_2",
+          "explain": "Projection back to model width."
+        }
+      ],
+      "concept": "feedforward-layer",
+      "source": "Vaswani et al. 2017, §3.3 — 'position-wise feed-forward networks'."
+    },
+    {
+      "id": "ppl",
+      "tex": "\\mathrm{PPL} = e^{\\mathcal{L}}",
+      "name": "Perplexity",
+      "say": "P P L equals e to the loss",
+      "meaning": "The exponential of mean per-token loss — 'how many-way-confused is the model per token'.",
+      "parts": [
+        {
+          "tex": "\\mathcal{L}",
+          "explain": "Mean cross-entropy (in nats, log base e).",
+          "symbol": "loss-l"
+        },
+        {
+          "tex": "e^{(\\cdot)}",
+          "explain": "Un-logs the loss into an effective vocabulary size."
+        }
+      ],
+      "concept": "evaluation",
+      "conditions": "Only comparable under the same tokenizer — vocabulary changes the count."
+    },
+    {
+      "id": "flops-6nd",
+      "tex": "C \\approx 6\\,N\\,D",
+      "name": "Training compute estimate",
+      "say": "C is about six N D",
+      "meaning": "Total training FLOPs ≈ 6 × parameters × tokens seen — the back-of-envelope for run size.",
+      "parts": [
+        {
+          "tex": "N",
+          "explain": "Parameter count.",
+          "symbol": "n-params"
+        },
+        {
+          "tex": "D",
+          "explain": "Tokens processed.",
+          "symbol": "data-d"
+        },
+        {
+          "tex": "6",
+          "explain": "2 FLOPs per multiply-add × 3 (forward, and backward ≈ 2× forward)."
+        }
+      ],
+      "concept": "scaling-laws",
+      "conditions": "Dense transformer, ignoring attention FLOPs for short sequences.",
+      "source": "Kaplan et al. 2020, arXiv:2001.08361."
+    },
+    {
+      "id": "cosine",
+      "tex": "\\cos(\\mathbf{u}, \\mathbf{v}) = \\frac{\\mathbf{u} \\cdot \\mathbf{v}}{\\|\\mathbf{u}\\|\\,\\|\\mathbf{v}\\|}",
+      "name": "Cosine similarity",
+      "say": "u dot v over norm u norm v",
+      "meaning": "The cosine of the angle between two vectors — the default 'how related are these embeddings' metric.",
+      "parts": [
+        {
+          "tex": "\\mathbf{u} \\cdot \\mathbf{v}",
+          "explain": "Dot product — alignment before normalising.",
+          "symbol": "embed-e"
+        },
+        {
+          "tex": "\\|\\mathbf{u}\\|\\,\\|\\mathbf{v}\\|",
+          "explain": "Magnitudes divided out — only direction matters."
+        }
+      ],
+      "concept": "embeddings",
+      "conditions": "Range [−1, 1] for real vectors."
+    },
+    {
+      "id": "rlhf-obj",
+      "tex": "\\max_{\\pi_\\theta}\\; \\mathbb{E}[r(x, y)] - \\beta\\, D_{\\mathrm{KL}}(\\pi_\\theta \\| \\pi_{\\mathrm{ref}})",
+      "name": "RLHF objective",
+      "say": "maximize expected reward minus beta times KL from reference",
+      "meaning": "Chase the reward while staying near the pre-RL policy — the tether that keeps the text human-legible.",
+      "parts": [
+        {
+          "tex": "r(x, y)",
+          "explain": "Reward model's score for answer y to prompt x.",
+          "symbol": "reward-r"
+        },
+        {
+          "tex": "D_{\\mathrm{KL}}(\\pi_\\theta \\| \\pi_{\\mathrm{ref}})",
+          "explain": "Drift penalty: how far the tuned policy moved from its frozen start.",
+          "symbol": "kl-div"
+        },
+        {
+          "tex": "\\beta",
+          "explain": "How hard the tether pulls.",
+          "symbol": "beta"
+        }
+      ],
+      "concept": "rlhf",
+      "conditions": "Optimised with PPO-style policy gradients in the classic pipeline (Ouyang et al. 2022).",
+      "source": "Ouyang et al., InstructGPT, arXiv:2203.02155; Christiano et al. 2017, arXiv:1706.03741."
+    },
+    {
+      "id": "dpo-loss",
+      "tex": "-\\log \\sigma\\!\\left(\\beta \\log \\tfrac{\\pi_\\theta(y_w|x)}{\\pi_{\\mathrm{ref}}(y_w|x)} - \\beta \\log \\tfrac{\\pi_\\theta(y_l|x)}{\\pi_{\\mathrm{ref}}(y_l|x)}\\right)",
+      "name": "DPO loss",
+      "say": "minus log sigmoid of beta times the log-ratio gap",
+      "meaning": "Push the policy's preferred-answer advantage over the dispreferred one — supervised loss, no reward model, no sampling.",
+      "parts": [
+        {
+          "tex": "y_w, y_l",
+          "explain": "The human-preferred and -rejected answers to the same prompt."
+        },
+        {
+          "tex": "\\log \\tfrac{\\pi_\\theta}{\\pi_{\\mathrm{ref}}}",
+          "explain": "Policy's log-ratio vs the reference — implicit reward.",
+          "symbol": "pi-policy"
+        },
+        {
+          "tex": "\\beta",
+          "explain": "Scale / implicit KL strength.",
+          "symbol": "beta"
+        }
+      ],
+      "concept": "dpo",
+      "conditions": "Derived from the same KL-tethered objective as RLHF; needs only pairwise preference data.",
+      "source": "Rafailov et al., DPO, NeurIPS 2023, arXiv:2305.18290."
+    },
+    {
+      "id": "moe-layer",
+      "tex": "y = \\sum_{i \\in \\mathrm{top\\mbox{-}k}(x)} g_i(x)\\, E_i(x)",
+      "name": "MoE layer output",
+      "say": "sum over the top-k experts of gate i times expert i",
+      "meaning": "Each token's output is a gate-weighted blend of just k of the E experts' feed-forward blocks.",
+      "parts": [
+        {
+          "tex": "g_i(x)",
+          "explain": "Router's normalized score for expert i — zero for non-selected experts.",
+          "symbol": "gate-g"
+        },
+        {
+          "tex": "E_i(x)",
+          "explain": "Expert i's feed-forward computation — only k of E run per token."
+        },
+        {
+          "tex": "\\mathrm{top\\mbox{-}k}",
+          "explain": "The sparsity: k=1–2 typical, of E=8–256 experts."
+        }
+      ],
+      "concept": "mixture-of-experts",
+      "conditions": "Load-balancing losses keep experts from collapsing to a few favourites.",
+      "source": "Shazeer et al. 2017, arXiv:1701.06538; Fedus et al., Switch, arXiv:2101.03961."
+    },
+    {
+      "id": "ddpm-loss",
+      "tex": "\\mathcal{L} = \\mathbb{E}_{x_0, \\varepsilon, t}\\, \\big\\| \\varepsilon - \\varepsilon_\\theta(x_t, t) \\big\\|^2",
+      "name": "DDPM training objective",
+      "say": "expected squared error between the true noise and the predicted noise",
+      "meaning": "Sample data, add known noise at step t, train the network to name the noise — generation is the reverse.",
+      "parts": [
+        {
+          "tex": "\\varepsilon",
+          "explain": "The Gaussian noise actually added.",
+          "symbol": "eps-noise"
+        },
+        {
+          "tex": "\\varepsilon_\\theta(x_t, t)",
+          "explain": "The model's noise estimate given the corrupted sample and step index.",
+          "symbol": "x-t"
+        },
+        {
+          "tex": "\\|\\cdot\\|^2",
+          "explain": "Plain mean-squared error — remarkably, it works."
+        }
+      ],
+      "concept": "diffusion-models",
+      "conditions": "Simplified objective from Ho et al. 2020 — the full ELBO reduces to this.",
+      "source": "Ho, Jain, Abbeel, DDPM, NeurIPS 2020, arXiv:2006.11239."
+    },
+    {
+      "id": "layernorm",
+      "tex": "\\mathrm{LN}(x) = \\gamma\\,\\frac{x - \\mu}{\\sigma} + \\beta",
+      "name": "Layer normalization",
+      "say": "gamma times x minus mu over sigma plus beta",
+      "meaning": "Re-centre and re-scale each token's vector to mean 0, variance 1, then let learned γ, β adjust it.",
+      "parts": [
+        {
+          "tex": "x - \\mu",
+          "explain": "Remove the token's own mean — centring."
+        },
+        {
+          "tex": "/\\sigma",
+          "explain": "Divide by its standard deviation — scale to unit variance."
+        },
+        {
+          "tex": "\\gamma, \\beta",
+          "explain": "Learned per-channel gain and offset restoring what the network needs."
+        }
+      ],
+      "concept": "residual-normalization",
+      "conditions": "Per token, over the feature dimension — unlike batch norm's per-feature over the batch. RMSNorm drops the μ term.",
+      "source": "Ba, Kiros, Hinton, Layer Normalization, arXiv:1607.06450."
+    },
+    {
+      "id": "kv-bytes",
+      "tex": "\\text{KV bytes} = 2 \\cdot L \\cdot n \\cdot d_{\\mathrm{head}} \\cdot h \\cdot b",
+      "name": "KV cache size",
+      "say": "two times layers times tokens times head-dim times heads times bytes",
+      "meaning": "Memory for one sequence's cache: keys and values, every layer, every past token.",
+      "parts": [
+        {
+          "tex": "2",
+          "explain": "K and V."
+        },
+        {
+          "tex": "L \\cdot n",
+          "explain": "Layers × context positions — both scale the footprint linearly."
+        },
+        {
+          "tex": "d_{\\mathrm{head}} \\cdot h",
+          "explain": "Per-token width cached per layer (GQA shrinks h for K,V).",
+          "symbol": "key-dim"
+        },
+        {
+          "tex": "b",
+          "explain": "Bytes per element — 2 at FP16, halving with quantization."
+        }
+      ],
+      "concept": "kv-cache",
+      "conditions": "Grows linearly in sequence length and batch — the serving-memory wall.",
+      "source": "Derived — e.g. Pope et al., Efficiently Scaling Transformer Inference, arXiv:2211.05102."
+    }
+  ]
+}

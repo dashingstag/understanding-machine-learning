@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reward models · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="reward-models" data-page-id="reward-models" data-root="../../">
+  <header class="top">
+    <h1>Reward models</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The learned proxy for human preference — a model trained on pairwise rankings that RL optimizes against.</p>
+    <p class="doc-syms"><span data-notation="reward-r"></span> <span data-notation="kl-div"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>A learned scalar proxy for human preference: a (usually transformer) head trained on pairwise rankings via Bradley–Terry — $\mathcal{L}_{RM} = -\log \sigma(r(x, y_w) - r(x, y_l))$. In <code>rlhf</code>, the <code data-notation="reward-r">reward-r</code> it outputs <em>is</em> the environment; <code>dpo</code> shows the same signal can be used without building the model at all.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a> — humans can't score the millions of samples RL needs; the RM is the scalable stand-in for "a person liked this". Every <code>goodhart-law</code> failure in alignment — hacking, sycophancy, verbosity bias — is a reward-model flaw being optimized.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Pairwise &gt; absolute.</strong> Raters agree more on "which is better" than on scores — Bradley–Terry converts rankings to a scalar via the logistic difference.</li>
+    <li><strong>Architecture.</strong> Usually the SFT model minus the LM head plus a scalar head — it reads completions, not generates them.</li>
+    <li><strong>Calibration tricks.</strong> Ensemble RMs, margin regularization, out-of-distribution penalty terms — all patches on the same wound: the RM is only valid near its training distribution.</li>
+    <li><strong>Reward hacking.</strong> The policy exploits RM blind spots: length inflation, sycophancy, formatting tells — mitigated by <code data-notation="kl-div">kl-div</code> penalty to the SFT policy (<code data-notation="beta">beta</code>), never eliminated.</li>
+    <li><strong>Generative/verifiable alternatives.</strong> <code>verifiable-rewards</code> where checkable; rubric-scored judges (<code>llm-as-judge</code>) elsewhere; RM is the middle ground for fuzzy human taste.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>RM score spread: chosen $r = 2.1$, rejected $r = -0.4$ on prompt $x$.</p>
+    <ul>
+    <li>Pair loss contribution: $-\log\sigma(2.1 - (-0.4)) = -\log\sigma(2.5) \approx 0.078$ — already confident.</li>
+    <li>If the policy finds an exploit producing $r = 8$ on gibberish, nothing in the RM stops it — the KL leash and OOD penalties are the only brakes. That's reward hacking in one number.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Christiano et al., deep RL from human preferences — <a href="https://arxiv.org/abs/1706.03741" target="_blank" rel="noopener">arXiv:1706.03741</a></li>
+    <li>Ouyang et al., InstructGPT — <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arXiv:2203.02155</a></li>
+    <li>Gao et al., <em>Scaling Laws for Reward Model Overoptimization</em> — <a href="https://arxiv.org/abs/2210.10760" target="_blank" rel="noopener">arXiv:2210.10760</a></li>
+    <li>Bradley &amp; Terry 1952 — the ranking model itself</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Process reward models (step-level scores) vs outcome RMs — which resists hacking better at <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a> scale?</li>
+    <li>Can RMs be made to say "I don't know" on OOD inputs? — the Goodhart-robustness question.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

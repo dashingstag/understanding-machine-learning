@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reasoning models · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="reasoning-models" data-page-id="reasoning-models" data-root="../../">
+  <header class="top">
+    <h1>Reasoning and test-time compute</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Accuracy vs thinking budget</h3>
+    <svg id="anim" viewBox="0 0 300 180"></svg>
+    <label>trace tokens: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The second axis">
+      <h2>A second axis of scale</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="jason-wei">Jason Wei</span>'s 2022 CoT paper
+          showed "let's think step by step" unlocks latent ability — three
+          years later RL-trained thinking is the product feature:
+          every frontier model ships a slow-smart mode.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>o1/R1-class models spend thousands of hidden tokens per hard
+          query — customers literally pay per thought. Reasoning tokens
+          are now a pricing tier, not a trick.</p>
+      </aside>
+      <p><a data-concept-link="pretraining">Pretraining</a> buys
+        capability once; thinking spends it repeatedly per query. The
+        panel's curve is the whole idea in one line: accuracy climbs as
+        the model is allowed more tokens to think — same weights, more
+        <span data-notation="flop">FLOPs</span> at inference.</p>
+    </section>
+
+    <section class="frame" data-title="Scratchpad">
+      <h2>The chain is the scratchpad</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>A transformer can't store intermediate products between layers
+          — but it <em>can</em> write them as tokens and read them back.
+          <a data-concept-link="chain-of-thought">CoT</a> is working
+          memory implemented through the output channel.</p>
+      </aside>
+      <p>"17 × 24" fails in one forward pass but succeeds when decomposed
+        to "17×20 = 340, 17×4 = 68, 340+68 = 408" — the model uses its own
+        generated tokens as storage. RL then discovers <em>which</em>
+        decompositions pay: backtracking, self-checks, casework.</p>
+    </section>
+
+    <section class="frame" data-title="Verifiable RL">
+      <h2>Why math and code got there first</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>DeepSeek-R1's recipe — GRPO on math answers graded by exact
+          match — produced spontaneous "aha" backtracking in the trace:
+          the behaviour emerged because correct answers paid, not because
+          anyone taught reflection.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Extending this to unverifiable domains (writing, strategy) is
+          the live frontier — rubric judges, process reward models and
+          self-consistency are the candidates. See
+          <a data-concept-link="verifiable-rewards">verifiable
+          rewards</a>.</p>
+      </aside>
+      <p>A unit test can't be sweet-talked — that's the point. Dense,
+        ground-truth reward lets RL shape long traces without
+        <a data-concept-link="reward-models">reward-model</a> blind
+        spots.</p>
+    </section>
+
+    <section class="frame" data-title="Cost & faithfulness">
+      <h2>What thinking costs, and what it hides</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Turpin et al. (2023) showed models' stated reasoning can
+          post-rationalize biased answers — the visible trace is not
+          guaranteed to be the real computation. Reading the "mind" is
+          <a data-concept-link="interpretability">interpretability</a>'s
+          job, not the trace's.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every reasoning token is a served token — latency,
+          <a data-concept-link="kv-cache">KV cache</a>, dollars. <a data-concept-link="inference-efficiency">Inference
+          efficiency</a> decides how much thinking is affordable, and
+        <a data-concept-link="agents-and-tool-use">agents</a> spend
+          thinking to plan.</p>
+      </aside>
+      <p>Test-time compute is a genuine axis — but it prices latency and
+        cost, and the trace it buys is an engineered artifact, not a
+        window. Both facts matter.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: accuracy vs reasoning-token budget — log-ish curve + plateau
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 25, PY = 150, PW = 265, PH = 120;
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    const acc = t => 0.55 + 0.38 * Math.log10(1 + t / 8); // rises, saturates
+    const toX = t => PX + (t / 100) * PW;
+    const toY = a => PY - (a - 0.5) / 0.5 * PH;
+    const line = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: "" });
+    const dot = el("circle", { r: 4.5, fill: "#f0883e" });
+    svg.appendChild(line); svg.appendChild(dot);
+    const axes = el("text", { x: PX + 4, y: PY + 14, "font-size": 9,
+      fill: "#9aa" }); axes.textContent = "accuracy ↑ vs reasoning tokens →";
+    svg.appendChild(axes);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(t) {
+      const pts = [];
+      for (let i = 0; i <= t; i++) pts.push(`${toX(i)},${toY(acc(i))}`);
+      line.setAttribute("points", pts.join(" "));
+      dot.setAttribute("cx", toX(t)); dot.setAttribute("cy", toY(acc(t)));
+      lab.textContent = t;
+      info.textContent = `acc ≈ ${(acc(t) * 100).toFixed(0)}% — ${t < 40 ? "every extra token buys real accuracy here" : "the curve flattens: thinking hits diminishing returns"}.`;
+      scrub.value = t;
+    }
+    let t = 0, timer;
+    const tick = () => { t = (t + 1) % 101; paint(t); };
+    const start = () => { timer = setInterval(tick, 90); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); t = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

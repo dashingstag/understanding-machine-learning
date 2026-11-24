@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multimodal models · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="multimodal-models" data-page-id="multimodal-models" data-root="../../">
+  <header class="top">
+    <h1>Multimodal models</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>One trunk, many doors</h3>
+    <svg id="anim" viewBox="0 0 300 190"></svg>
+    <label>modality: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="3" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="One model, many senses">
+      <h2>One model, many senses</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="radford">Alec Radford</span>'s CLIP
+          (OpenAI, 2021) proved one contrastive objective could align
+          400M image–text pairs — the backbone most multimodal systems
+          still stand on.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>GPT-4V, Gemini, Claude — frontier products are natively
+          multimodal. The text stack didn't change; the input pipeline
+          grew doors.</p>
+      </aside>
+      <p>Text, image, audio, video — each becomes a sequence of
+        <a data-concept-link="embeddings">vectors</a> through a
+        <a data-concept-link="modality-tokenizers">modality
+        tokenizer</a>, then the same
+        <a data-concept-link="transformer-architecture">transformer</a>
+        trunk processes the mix. Cross-modal reasoning is just
+        <a data-concept-link="attention-mechanism">attention</a> over a
+        mixed sequence.</p>
+    </section>
+
+    <section class="frame" data-title="Tokenizing the world">
+      <h2>How pixels become tokens</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>ViT chopped images into 16×16 patches and treated them as
+          words — "an image is worth 16×16 words" is literally the
+          paper's subtitle (Dosovitskiy et al. 2020).</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>~576 image tokens ≈ a paragraph of text — so a screenshot
+          costs the context window of a page of prose. Image
+          <a data-concept-link="tokenization">token budgets</a> are why
+          long-video understanding is still expensive.</p>
+      </aside>
+      <p>Patches, VQ codes, spectrogram slices — every modality is made
+        legible the same way: cut it up, embed each piece, hand it to
+        the trunk. The model never sees pixels; it sees
+        <span data-notation="d-model">$d$</span>-dimensional tokens.</p>
+    </section>
+
+    <section class="frame" data-title="Alignment">
+      <h2>How the senses agree</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="contrastive-learning">Contrastive
+          learning</a> needs no labels — an image and its caption are a
+          free positive pair. 400M web-scraped pairs built the space
+          CLIP lives in.</p>
+      </aside>
+      <p>Understanding needs shared meaning: pull matching image/text
+        <a data-concept-link="embeddings">embeddings</a> together, push
+        mismatches apart. That pre-aligned space is what an LLM's
+        projector plugs into — the vision encoder arrives already
+        speaking "meaning".</p>
+    </section>
+
+    <section class="frame" data-title="Embodiment">
+      <h2>Same trunk, motors attached</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>RT-2 (Google DeepMind) fine-tuned a vision-language model to
+          emit robot action tokens — the same network that describes an
+          image can move an arm, because actions are just another
+          vocabulary.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>VLA models (RT-2, π0) drive real robots; self-driving stacks
+          are the same architecture with different output heads. The
+          output side needs modality <em>decoders</em>: diffusion for
+          pixels — <a data-concept-link="diffusion-models">next
+          page</a>.</p>
+      </aside>
+      <p>Understanding reuses the LM head; action and generation need
+        modality-specific outputs — diffusion for images, codec
+        decoders for audio, action tokens for robots.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: modality streams merging into one trunk; scrub = which stream
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const MODS = ["image → ViT patches", "audio → spectrogram",
+                  "video → frame tokens", "text → BPE tokens"];
+    const COL = ["#58a6ff", "#f0883e", "#3fb950", "#bc8cff"];
+    MODS.forEach((m, i) => {
+      const y = 30 + i * 38;
+      svg.appendChild(el("rect", { x: 8, y, width: 105, height: 22, rx: 5,
+        fill: "#161b22", stroke: COL[i], id: `m${i}` }));
+      const t = el("text", { x: 60, y: y + 15, "text-anchor": "middle",
+        "font-size": 8.5, fill: "#c9d1d9" });
+      t.textContent = m; svg.appendChild(t);
+      svg.appendChild(el("line", { x1: 113, y1: y + 11, x2: 160, y2: 85,
+        stroke: COL[i], "stroke-width": 1.5, "stroke-dasharray": "3 3",
+        id: `w${i}` }));
+    });
+    svg.appendChild(el("rect", { x: 160, y: 55, width: 130, height: 60,
+      rx: 8, fill: "#161b22", stroke: "#58a6ff", "stroke-width": 2 }));
+    const tt = el("text", { x: 225, y: 80, "text-anchor": "middle",
+      "font-size": 10, fill: "#c9d1d9" });
+    tt.textContent = "one transformer"; svg.appendChild(tt);
+    const tt2 = el("text", { x: 225, y: 95, "text-anchor": "middle",
+      "font-size": 9, fill: "#9aa" });
+    tt2.textContent = "mixed token stream"; svg.appendChild(tt2);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      MODS.forEach((_, j) => {
+        const on = j === i;
+        svg.getElementById(`m${j}`).setAttribute("fill", on ? "#1c3550" : "#161b22");
+        svg.getElementById(`w${j}`).setAttribute("stroke-width", on ? 3 : 1.5);
+      });
+      lab.textContent = MODS[i].split(" ")[0];
+      info.textContent = `${MODS[i]} — every door produces the same-shaped tokens; the trunk can't tell them apart.`;
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 4; paint(i); };
+    const start = () => { timer = setInterval(tick, 1600); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

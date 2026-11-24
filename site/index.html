@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>understanding-machine-learning · concept map</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page-id="map">
+  <header class="top">
+    <h1>understanding-machine-learning</h1>
+    <nav><a href="notation.html">Notation</a><a href="#shared">Shared concepts</a></nav>
+    <span class="muted" id="stats"></span>
+  </header>
+
+  <main class="map">
+    <div class="legend" id="legend"></div>
+    <p class="muted">
+      A concept needed in several places is drawn in full once; elsewhere it appears as a ↗ link to that place.
+    </p>
+    <ul class="tree" id="tree"></ul>
+
+    <h2 id="shared">Shared concepts</h2>
+    <p class="muted">Concepts needed by more than one other concept. Their folders stay at the top level of <code>concepts/</code>.</p>
+    <table class="shared-table" id="shared-table"></table>
+  </main>
+
+  <script src="map.js"></script>
+  <script src="notation-data.js"></script>
+  <script src="lore-data.js"></script>
+  <script src="assets/page-id.js"></script>
+  <script src="assets/progress.js"></script>
+  <script src="assets/search.js"></script>
+  <script>
+    const map = window.CONCEPT_MAP;
+    const byId = Object.fromEntries(map.nodes.map((n) => [n.id, n]));
+    const children = Object.fromEntries(map.nodes.map((n) => [n.id, []]));
+    map.nodes.forEach((n) => n.parents.forEach((p) => children[p].push(n.id)));
+
+
+    const badge = (lv) => `<span class="level lv${lv}" title="${map.levels[lv].name} — ${map.levels[lv].desc}">${lv}</span>`;
+    const title = (id) => byId[id].title;
+    const sharedBadge = (n) =>
+      n.parents.length > 1
+        ? `<span class="shared-badge" title="Needed by: ${n.parents.map(title).join(", ")}">shared ×${n.parents.length}</span>`
+        : "";
+
+    function head(id, parent) {
+      const n = byId[id];
+      const links = [
+        n.playback && `<a href="../${n.playback}">playback</a>`,
+        n.page_html && `<a href="../${n.page_html}">article</a>`,
+      ].filter(Boolean).join("");
+      const why = parent && n.why && n.why[parent]
+        ? ` title="Needed by ${title(parent)} — ${n.why[parent].replaceAll('"', '&quot;')}"` : "";
+      return (
+        `${badge(n.level)} <span class="node-title"${why}>${n.title}</span> ${sharedBadge(n)}` +
+        (links ? `<span class="node-links">${links}</span>` : "") +
+        (n.summary ? `<span class="node-summary">${n.summary}</span>` : "")
+      );
+    }
+
+    // Draw each concept in full at its first place in a depth-first walk; later places link to it.
+    const drawn = new Set();
+    function render(id, parent) {
+      if (drawn.has(id)) {
+        return `<li class="leaf ref">${badge(byId[id].level)} <a href="#node-${id}" data-jump="${id}">↗ ${title(id)}</a>` +
+          ` <span class="shared">drawn under ${title(byId[id].drawnUnder || map.root)}</span></li>`;
+      }
+      drawn.add(id);
+      byId[id].drawnUnder = parent;
+      if (!children[id].length) return `<li class="leaf" id="node-${id}">${head(id, parent)}</li>`;
+      const open = id === map.root || byId[id].parents.includes(map.root) ? " open" : "";
+      return `<li id="node-${id}"><details${open}><summary>${head(id, parent)}</summary><ul>` +
+        children[id].map((c) => render(c, id)).join("") + `</ul></details></li>`;
+    }
+
+    document.getElementById("tree").innerHTML = render(map.root, null);
+
+    function jump(id) {
+      const el = document.getElementById(`node-${id}`);
+      if (!el) return;
+      for (let d = el.parentElement; d; d = d.parentElement) if (d.tagName === "DETAILS") d.open = true;
+      el.scrollIntoView({ block: "center" });
+      el.classList.remove("flash");
+      void el.offsetWidth;
+      el.classList.add("flash");
+    }
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-jump]");
+      if (a) { e.preventDefault(); jump(a.dataset.jump); history.replaceState(null, "", `#node-${a.dataset.jump}`); }
+    });
+    if (location.hash.startsWith("#node-")) jump(location.hash.slice(6));
+
+    const shared = map.nodes.filter((n) => n.parents.length > 1);
+    document.getElementById("shared-table").innerHTML =
+      "<tr><th>Concept</th><th>Needed by</th></tr>" +
+      shared.map((n) =>
+        `<tr><td>${badge(n.level)} <a href="#node-${n.id}" data-jump="${n.id}">${n.title}</a></td>` +
+        `<td>${n.parents.map((p) => `<a href="#node-${p}" data-jump="${p}"` +
+          (n.why && n.why[p] ? ` title="${n.why[p].replaceAll('"', '&quot;')}"` : "") +
+          `>${title(p)}</a>`).join(", ")}</td></tr>`
+      ).join("");
+
+    document.getElementById("legend").innerHTML = map.levels
+      .map((l, i) => `<span title="${l.desc}">${badge(i)} ${l.name}: ${map.nodes.filter((n) => n.level === i).length}</span>`)
+      .join("") +
+      `<div class="level-bar">` + map.levels
+        .map((l, i) => {
+          const c = map.nodes.filter((n) => n.level === i).length;
+          return c ? `<span class="lv${i}" style="flex:${c}" title="${l.name}: ${c}"></span>` : "";
+        }).join("") + `</div>`;
+    const withPages = map.nodes.filter((n) => n.page).length;
+    document.getElementById("stats").textContent =
+      `${map.nodes.length} concepts · ${shared.length} shared · ${withPages} with md`;
+  </script>
+</body>
+</html>

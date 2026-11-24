@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Direct preference optimization (DPO) · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="dpo" data-page-id="dpo" data-root="../../">
+  <header class="top">
+    <h1>Direct preference optimization (DPO)</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The closed-form alternative that skips the reward model — now the cheap default for preference tuning.</p>
+    <p class="doc-syms"><span data-notation="pi-policy"></span> <span data-notation="beta"></span> <span data-notation="logits-z"></span></p>
+    <h2>Statement</h2>
+    <p>The closed-form shortcut around <code>rlhf</code>: under the optimal-policy form of the KL-regularized objective, the reward can be written in terms of the policy itself — so <a class="doc-concept" href="../../site/notation.html#dpo-loss"><code>dpo-loss</code></a> trains <code data-notation="pi-policy">pi-policy</code> directly on preference pairs, no reward model, no sampling, no RL. A supervised loss with an RLHF-shaped optimum.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a> — most open models align with DPO-family losses rather than full PPO: simpler (one model + frozen reference), cheaper, more stable. It's the pragmatic majority case, and its derivations explain what RLHF is really optimizing.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The trick.</strong> Rearrange the KL-regularized optimum: $r(x,y) = \beta \log \frac{\pi(y|x)}{\pi_{ref}(y|x)} + \beta\log Z(x)$ — reward becomes a log-ratio of policies; the partition term cancels inside the Bradley–Terry difference.</li>
+    <li><strong>The loss.</strong> <a class="doc-concept" href="../../site/notation.html#dpo-loss"><code>dpo-loss</code></a>: maximize $\log\sigma\big(\beta[\log\frac{\pi(y_w)}{\pi_{ref}(y_w)} - \log\frac{\pi(y_l)}{\pi_{ref}(y_l)}]\big)$ — push chosen up, rejected down, relative to the frozen reference.</li>
+    <li><strong><code data-notation="beta">beta</code> as the leash.</strong> Same role as the KL coefficient in <a class="doc-concept" href="../../site/notation.html#rlhf-obj"><code>rlhf-obj</code></a>: small β drifts far (length bias, mode collapse); large β stays near SFT and learns little.</li>
+    <li><strong>Variants.</strong> IPO (fixes overfitting), KTO (binary signals, no pairs), ORPO (folds SFT+pref into one loss), SimPO (reference-free) — the DPO-family zoo.</li>
+    <li><strong>Known failure modes.</strong> Length exploitation, decreased diversity, sensitivity to pair quality — and it can't learn from <em>unlabeled</em> exploration the way on-policy RL can (<code>verifiable-rewards</code>).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Pair: chosen log-ratio $\log\frac{\pi(y_w)}{\pi_{ref}(y_w)} = -0.2$, rejected $= -1.1$, β = 0.1:</p>
+    <ul>
+    <li>Margin: $0.1 \times (-0.2 + 1.1) = 0.09$ → loss $-\log\sigma(0.09) \approx 0.69$.</li>
+    <li>After updates make the margin $0.5$: loss ≈ 0.47 — the pair is "learned" once the policy prefers chosen by a β-scaled gap over the reference.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Rafailov et al., DPO — <a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">arXiv:2305.18290</a></li>
+    <li>Azar et al., IPO — <a href="https://arxiv.org/abs/2310.12036" target="_blank" rel="noopener">arXiv:2310.12036</a></li>
+    <li>Ethayarajh et al., KTO — <a href="https://arxiv.org/abs/2402.01306" target="_blank" rel="noopener">arXiv:2402.01306</a></li>
+    <li>Meng et al., SimPO — <a href="https://arxiv.org/abs/2405.14734" target="_blank" rel="noopener">arXiv:2405.14734</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>On-policy DPO/online variants — can the reference-free methods close the exploration gap vs real RL at <code>verifiable-rewards</code> scale?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

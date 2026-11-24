@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inference and efficiency · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="inference-efficiency" data-page-id="inference-efficiency" data-root="../../">
+  <header class="top">
+    <h1>Inference and efficiency</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>KV cache vs context length</h3>
+    <svg id="anim" viewBox="0 0 300 180"></svg>
+    <label>context (k tokens): <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="128" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Bytes, not FLOPs">
+      <h2>The bottleneck is bytes, not FLOPs</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Decoding one token rereads <em>every weight</em> — a 7B fp16
+          model is a 14GB memory read per token. Modern GPUs have FLOPs
+          to spare; the wire is what you pay for.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every $/token price you see is memory bandwidth + scheduling.
+          <a data-concept-link="reasoning-models">Reasoning models</a>
+          turned 100-token answers into 10k-token answers — efficiency
+          is now the margin.</p>
+      </aside>
+      <p>Prefill is compute-bound (all tokens at once); decode is
+        bandwidth-bound (one token at a time). The entire efficiency
+        toolkit is ways to read fewer bytes per token.</p>
+    </section>
+
+    <section class="frame" data-title="The cache">
+      <h2>The KV cache — the other memory hog</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="kv-cache">KV caching</a> skips
+          recomputing past keys/values — but the cache grows linearly
+          with context: 128k tokens ≈ tens of GB on a big model. GQA and
+          MLA exist purely to shrink it.</p>
+      </aside>
+      <div data-formula="kv-bytes"></div>
+      <p>Every past token's K/V stays resident so attention can look
+        back. Cache per token: $2 \cdot L \cdot n_{kv} \cdot d_h \cdot
+        \text{bytes}$ — the panel grows it linearly with context.</p>
+    </section>
+
+    <section class="frame" data-title="Four levers">
+      <h2>Four levers, one goal: fewer bytes</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="speculative-decoding">Speculative
+          decoding</a> is provably lossless — a draft model proposes,
+          the big model verifies $k$ tokens per pass and rejects any
+          mismatch. Same distribution, 2–3× faster.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="quantization">4-bit quantization</a>
+          halves decode time again on top of that —
+          <a data-concept-link="knowledge-distillation">distillation</a>
+          changes the model entirely; batching (vLLM) sets fleet
+          throughput. Production serving stacks use all four.</p>
+      </aside>
+      <p><a data-concept-link="quantization">Quantization</a> shrinks
+        weight bytes; <a data-concept-link="speculative-decoding">
+        speculation</a> amortizes them;
+        <a data-concept-link="knowledge-distillation">distillation</a>
+        shrinks the model; paged attention shrinks the cache's
+        fragmentation. None changes the math of attention — all change
+        its bill.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: KV cache memory vs context length for a 32L × 8KV × 128d model
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 30, PY = 150, PW = 260, PH = 115;
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    // fp16: 2 (K&V) * 32 layers * 8 heads * 128 dim * 2 bytes ≈ 131k B/token
+    const GB = k => k * 1024 * 131072 / 1e9;
+    const toX = k => PX + (k / 128) * PW;
+    const toY = gb => PY - (gb / 18) * PH;
+    const line = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: "" });
+    const dot = el("circle", { r: 4.5, fill: "#f0883e" });
+    svg.appendChild(line); svg.appendChild(dot);
+    const gqa = el("line", { x1: PX, y1: PY - PH * 0.25, x2: PX + PW,
+      y2: PY - PH * 0.25, stroke: "#3fb950", "stroke-dasharray": "5 4" });
+    svg.appendChild(gqa);
+    const gt = el("text", { x: PX + PW - 4, y: PY - PH * 0.25 - 5,
+      "text-anchor": "end", "font-size": 9, fill: "#3fb950" });
+    gt.textContent = "MLA-compressed cache (illustrative)";
+    svg.appendChild(gt);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(k) {
+      const pts = [];
+      for (let i = 0; i <= k; i += 2) pts.push(`${toX(i)},${toY(GB(i))}`);
+      line.setAttribute("points", pts.join(" "));
+      dot.setAttribute("cx", toX(k)); dot.setAttribute("cy", toY(GB(k)));
+      lab.textContent = k;
+      info.textContent = `${k}k tokens → KV cache ≈ ${GB(k).toFixed(1)} GB fp16 — linear, and it multiplies by batch size.`;
+      scrub.value = k;
+    }
+    let k = 0, timer;
+    const tick = () => { k = (k + 2) % 130; paint(k); };
+    const start = () => { timer = setInterval(tick, 80); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); k = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

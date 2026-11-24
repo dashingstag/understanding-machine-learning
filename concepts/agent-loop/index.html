@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The agent loop · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="agent-loop" data-page-id="agent-loop" data-root="../../">
+  <header class="top">
+    <h1>The agent loop</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Perceive, plan, act, observe, repeat — the control cycle that turns a model into an agent.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>The control cycle that makes a model an agent: perceive (read context + fresh tool results) → plan (reason about the next move, often as <code>chain-of-thought</code>) → act (emit a <code>tool-calling</code> call) → observe (result appended as tokens) → repeat until the task's stop condition. The state of the machine is the context window itself.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a> — the loop is the concept; everything else is tooling or training that serves it. Its reliability is governed by per-step success compounding — the arithmetic that bounds agentic horizons.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Perceive.</strong> Context = task + history + latest observation; context management (compaction, scratchpad) decides what's still in view.</li>
+    <li><strong>Plan.</strong> Next move as tokens — ReAct's "Thought:" channel; in <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a>, hidden traces play this role.</li>
+    <li><strong>Act.</strong> One or more tool calls — the only phase that touches the world; everything else is tokens moving inside.</li>
+    <li><strong>Observe.</strong> Results appended; errors included — a good loop treats failures as data to re-plan on, not crashes.</li>
+    <li><strong>Compounding math.</strong> Per-step success $s$ over $n$ steps gives end-to-end $\sim s^n$ — the reason long-horizon tasks are hard and why verification checkpoints are the standard fix.</li>
+    <li><strong>Stopping.</strong> Termination criteria, budgets, human checkpoints — unbounded loops are a cost and a safety problem.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Per-step accuracy $s = 0.95$:</p>
+    <ul>
+    <li>10-step task: $0.95^{10} \approx 60\%$ end-to-end.</li>
+    <li>50 steps: $\approx 8\%$ — the same model, same tools. Horizon length, not capability, is the usual bottleneck; retries/verification change the exponent's base.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Yao et al., ReAct — <a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">arXiv:2210.03629</a></li>
+    <li>Park et al., generative agents — <a href="https://arxiv.org/abs/2304.03442" target="_blank" rel="noopener">arXiv:2304.03442</a></li>
+    <li>Significant Gravitas, AutoGPT (2023) — the pattern's popularization</li>
+    <li>Wang et al., Voyager (skill-library agent) — <a href="https://arxiv.org/abs/2305.16291" target="_blank" rel="noopener">arXiv:2305.16291</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Reliable self-verification — an agent checking its own work is the same <code>verifiable-rewards</code> problem at system level.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

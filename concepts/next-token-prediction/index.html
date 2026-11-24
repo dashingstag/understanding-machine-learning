@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Next-token prediction · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="next-token-prediction" data-page-id="next-token-prediction" data-root="../../">
+  <header class="top">
+    <h1>Next-token prediction</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The objective itself — one cross-entropy term per position is the entire training signal.</p>
+    <p class="doc-syms"><span data-notation="logits-z"></span> <span data-notation="softmax-sym"></span> <span data-notation="perplexity-s"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>The pretraining objective: at every position $t$, the model's <code data-notation="logits-z">logits-z</code> are softmaxed into a distribution and scored by <a class="doc-concept" href="../../site/notation.html#cross-entropy"><code>cross-entropy</code></a> against the true next token — $\mathcal{L} = -\sum_t \log p_\theta(x_{t+1} \mid x_{\le t})$. One term, trillions of times. <code data-notation="perplexity-s">perplexity-s</code> ($e^{\mathcal{L}}$, see <a class="doc-concept" href="../../site/notation.html#ppl"><code>ppl</code></a>) is the readable score: effective vocabulary size the model is still confused among.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a> — this is the entire training signal; everything else is logistics. The surprising theorem of the field: a good enough density estimator of text <em>becomes</em> capable — "predict the next word" compiles grammar, facts and reasoning into <code data-notation="weights-theta">weights-theta</code>.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Self-supervision.</strong> The label is in the data — no humans annotate; the corpus is both input and answer key.</li>
+    <li><strong>Per-position supervision.</strong> One sequence of length $n$ yields $n$ training examples — the density that makes trillion-token corpora tractable.</li>
+    <li><strong>What it forces.</strong> To predict well, the model must learn syntax, then facts, then discourse structure, then (at the frontier) latent reasoning steps — the objective is capability-neutral but demanding.</li>
+    <li><strong>Teacher forcing.</strong> Training feeds <em>true</em> prefixes; generation feeds <em>its own</em> outputs — the exposure-bias gap behind compounding errors (<a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a> mitigates).</li>
+    <li><strong>Alternatives.</strong> Masked prediction (BERT), span corruption (T5), diffusion objectives (<a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>) — next-token won for generation + scale; the comparison is why LLMs are decoders.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Sequence <code>the cat sat</code> → three supervised steps: given <code>the</code> predict <code>cat</code>; <code>the cat</code> → <code>sat</code>; <code>the cat sat</code> → next.</p>
+    <ul>
+    <li>If $p(\text{cat}\mid\text{the}) = 0.3$: contribution $-\ln 0.3 \approx 1.20$.</li>
+    <li>$p(\text{sat}\mid\text{the cat}) = 0.6$: $-\ln 0.6 \approx 0.51$.</li>
+    <li>Mean loss ≈ 0.85 → perplexity $e^{0.85} \approx 2.3$ — the model is "choosing" among ~2.3 effective options.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Radford et al., *Improving Language Understanding by Generative Pre-Training* (GPT-1, 2018)</li>
+    <li>Shannon, <em>Prediction and Entropy of Printed English</em> (1951) — the original framing</li>
+    <li>Bengio et al., neural language model — [JMLR 2003]</li>
+    <li>Kaplan et al. — <a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">arXiv:2001.08361</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Does next-token training produce genuine world models or surface statistics? — the <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> research thread; see also <code>emergent-abilities</code>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

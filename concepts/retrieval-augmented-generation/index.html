@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrieval-augmented generation · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="retrieval-augmented-generation" data-page-id="retrieval-augmented-generation" data-root="../../">
+  <header class="top">
+    <h1>Retrieval-augmented generation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Grounding generation in fetched documents: indexes, embedding search, citation and context stuffing.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="cosine-s"></span> <span data-notation="logits-z"></span></p>
+    <h2>Statement</h2>
+    <p>Ground generation in fetched documents: embed chunks of a corpus (<code data-notation="embed-e">embed-e</code> vectors), index them for <code>vector-search</code>, retrieve top-$k$ matches for each query, stuff them into the context, and generate with citations. <code>document-chunking</code> decides what's findable; the retriever decides what the model ever sees.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — RAG is how products answer about private, recent or niche data without retraining, and the main deployed countermeasure to hallucination: the model cites sources instead of reciting weights. Most enterprise "AI features" are this pipeline plus a system prompt.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Chunk.</strong> <code>document-chunking</code>: split documents into embeddable units — size, overlap and structure decide recall before anything else runs.</li>
+    <li><strong>Embed + index.</strong> <code data-notation="embed-e">embed-e</code> per chunk → ANN index (<code>vector-search</code>: HNSW/IVF) — milliseconds over millions of chunks.</li>
+    <li><strong>Retrieve.</strong> Query → embedding → top-$k$ by <code data-notation="cosine-s">cosine-s</code> (+ hybrid BM25, rerankers) — the set that bounds everything the model can say.</li>
+    <li><strong>Stuff.</strong> Chunks pasted into the context — <code>lost-in-middle</code> means position inside the window matters; reranking puts the best first.</li>
+    <li><strong>Cite.</strong> Answer grounded in the retrieved text — hallucination becomes <em>attributable</em>: check the citation or it didn't happen.</li>
+    <li><strong>Failure modes.</strong> Retrieval miss (right doc never fetched), context dilution (20 mediocre chunks), stale index — RAG fails at the retriever far more than at the model.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>"What's our refund policy?" over a 10k-doc wiki:</p>
+    <ul>
+    <li>Chunk at ~400 tokens with 10% overlap → ~60k vectors in an HNSW index.</li>
+    <li>Query embeds → top-5 returned in ~5ms → pasted above the question → the model quotes §4.2 verbatim.</li>
+    <li>If chunking split §4.2's table mid-row, the answer silently degrades — the pipeline's weakest link is upstream, always.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Lewis et al., <em>RAG for Knowledge-Intensive NLP</em> — <a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">arXiv:2005.11401</a></li>
+    <li>Karpukhin et al., DPR — <a href="https://arxiv.org/abs/2004.04906" target="_blank" rel="noopener">arXiv:2004.04906</a></li>
+    <li>Malkov &amp; Yashunin, HNSW — <a href="https://arxiv.org/abs/1603.09320" target="_blank" rel="noopener">arXiv:1603.09320</a></li>
+    <li>Izacard &amp; Grave, *Leveraging Passage Retrieval with Generative Models* (FiD) — <a href="https://arxiv.org/abs/2007.01282" target="_blank" rel="noopener">arXiv:2007.01282</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Agentic retrieval (the model decides when/what to fetch — <a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a>) vs fixed top-$k$ — the architecture boundary is dissolving.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

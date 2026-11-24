@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tokenization · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="tokenization" data-page-id="tokenization" data-root="../../">
+  <header class="top">
+    <h1>Tokenization</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>BPE merges, live</h3>
+    <svg id="anim" viewBox="0 0 300 170"></svg>
+    <label>merge: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="6" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Why subwords">
+      <h2>Why not characters, why not words</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Character models see ~4× longer sequences — and
+          <a data-concept-link="attention-mechanism">attention</a> is
+          quadratic in length, so characters cost ~16× the mixing compute.
+          Word vocabularies can't spell unseen names at all.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every API price is per token. GPT-class models: ~0.75 words per
+          token in English — and ~2–4× worse compression for low-resource
+          languages, a real cost asymmetry.</p>
+      </aside>
+      <p>Subword units split the difference: frequent strings ("the",
+        "ing") are single tokens; rare ones compose from pieces. The
+        model's <span data-notation="vocab">vocabulary</span> becomes a
+        learned compression of its corpus — typically 32k–256k entries.</p>
+    </section>
+
+    <section class="frame" data-title="BPE">
+      <h2>How the vocabulary is built</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>BPE is a 1994 file-compression algorithm. Sennrich et al.
+          repurposed it for translation in 2016 and it quietly became the
+          alphabet of every frontier LLM.</p>
+      </aside>
+      <p><a data-concept-link="bpe">Byte-pair encoding</a>: start with 256
+        bytes; repeatedly merge the most frequent adjacent pair; stop at
+        target <span data-notation="vocab">vocab</span> size. The merge
+        list plus the base alphabet is the entire tokenizer — the panel
+        runs it on a toy string.</p>
+    </section>
+
+    <section class="frame" data-title="Consequences">
+      <h2>Where tokens leak into behaviour</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>"How many r's in strawberry?" failed because models see
+          <em>Str aw berry</em> — no letters exist at that boundary. Many
+          famous LLM bugs are tokenizer artefacts, not reasoning
+          failures.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Chat markup (<code>&lt;|im_start|&gt;</code>), tool calls and
+          <a data-concept-link="reasoning-models">reasoning</a> traces are
+          reserved tokens — the tokenizer is also the product's
+          control-channel. See <a data-concept-link="sft">SFT</a> and
+          <a data-concept-link="tool-calling">tool calling</a>.</p>
+      </aside>
+      <p>Numbers split mid-digit, JSON fragments awkwardly, code indents
+        inconsistently. Token boundaries decide what
+        <a data-concept-link="next-token-prediction">next-token
+        prediction</a> must predict — and what it can never see.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: BPE merges on "aabcaabcaab" — each step merges most frequent pair
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const STEPS = [
+      ["a","a","b","c","a","a","b","c","a","a","b"],
+      ["aa","b","c","aa","b","c","aa","b"],          // merge a+a
+      ["aab","c","aab","c","aab"],                  // merge aa+b
+      ["aabc","aabc","aab"],                        // merge aab+c
+      ["aabcaabc","aab"],                           // merge aabc+aabc? -> keep toy: merge aab+c done
+      ["aabcaabc","aab"],
+      ["aabcaabcaab"]                               // merge aabcaabc+aab
+    ];
+    const NOTES = [
+      "raw bytes — every character is a token",
+      "merge 'aa' — most frequent pair",
+      "merge 'aab' — composed of previous merges",
+      "merge 'aabc'",
+      "merge 'aabcaabc'",
+      "vocab growing: 'aabc' + 'aabc'",
+      "final: whole string is one learned token"
+    ];
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    const HL = "#f0883e", BASE = "#58a6ff";
+    function paint(i) {
+      svg.innerHTML = "";
+      const toks = STEPS[i];
+      let x = 12;
+      toks.forEach((tok, j) => {
+        const w = tok.length * 10 + 10;
+        const isNew = i > 0 && tok === STEPS[i][j] &&
+          (i === STEPS.length - 1 || tok.length > 1);
+        svg.appendChild(el("rect", { x, y: 60, width: w, height: 26, rx: 5,
+          fill: "#161b22", stroke: j === 0 ? HL : BASE }));
+        const t = el("text", { x: x + w/2, y: 77, "text-anchor": "middle",
+          "font-size": 11, fill: "#c9d1d9" });
+        t.textContent = tok; svg.appendChild(t);
+        x += w + 4;
+      });
+      const c = el("text", { x: 12, y: 40, "font-size": 10, fill: "#9aa" });
+      c.textContent = `${toks.length} token${toks.length > 1 ? "s" : ""}`;
+      svg.appendChild(c);
+      lab.textContent = i;
+      info.textContent = NOTES[i];
+      scrub.value = i;
+    }
+    let i = 0, dir = 1, timer;
+    const tick = () => { i += dir; if (i >= 6 || i <= 0) dir = -dir; paint(i); };
+    const start = () => { timer = setInterval(tick, 1400); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; dir = 1; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RLHF (RL from human feedback) · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="rlhf" data-page-id="rlhf" data-root="../../">
+  <header class="top">
+    <h1>RLHF (RL from human feedback)</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The PPO-style reinforcement stage that made chat models usable — still the alignment workhorse.</p>
+    <p class="doc-syms"><span data-notation="reward-r"></span> <span data-notation="pi-policy"></span> <span data-notation="kl-div"></span> <span data-notation="beta"></span></p>
+    <h2>Statement</h2>
+    <p>Reinforcement learning that treats the <code>reward-models</code> score as the environment and the language model as the <code data-notation="pi-policy">pi-policy</code>: maximize <a class="doc-concept" href="../../site/notation.html#rlhf-obj"><code>rlhf-obj</code></a> — expected reward minus <code data-notation="kl-div">kl-div</code> to the frozen SFT policy, weighted by <code data-notation="beta">beta</code>. Historically PPO; newer runs use GRPO-style group baselines.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a> — SFT imitates good answers; RLHF optimizes "preferred" directly — the difference that made chat assistants refuse, hedge and follow. It's also the canonical <code>goodhart-law</code> arena: optimize a proxy hard enough and it stops measuring what you meant.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The loop.</strong> Sample completions from <code data-notation="pi-policy">pi-policy</code> → score with RM → PPO/GRPO ascent with KL leash to the SFT anchor.</li>
+    <li><strong>The KL term.</strong> Without it the policy drifts to RM exploits and loses fluency — <code data-notation="beta">beta</code> is the single dial between alignment and capability drift (the "alignment tax" knob).</li>
+    <li><strong>PPO.</strong> Actor–critic: value network estimates baselines, clipped updates keep steps safe — works, but 4 models in memory (policy, ref, RM, critic) is heavy.</li>
+    <li><strong>GRPO.</strong> Drop the critic: normalize reward within a group of samples per prompt — the DeepSeek-R1/<code>verifiable-rewards</code> default.</li>
+    <li><strong>Reward hacking.</strong> Over-optimization curve: true quality peaks then falls while RM score keeps rising (Gao et al. 2023) — the empirical Goodhart curve every run must watch.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>$\beta$ as the alignment dial (Gao et al., scaling laws for RM overoptimization): at $\beta$ too small, RM score ↑ 40% but human-rated quality ↓ after ~400 PPO steps — the policy writes longer, more confident answers the RM over-rewards. $\beta$ too large: no learning at all. The useful regime is a narrow middle.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Ouyang et al., InstructGPT — <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arXiv:2203.02155</a></li>
+    <li>Schulman et al., PPO — <a href="https://arxiv.org/abs/1707.06347" target="_blank" rel="noopener">arXiv:1707.06347</a></li>
+    <li>Gao et al., reward overoptimization — <a href="https://arxiv.org/abs/2210.10760" target="_blank" rel="noopener">arXiv:2210.10760</a></li>
+    <li>Shao et al., <em>DeepSeekMath/GRPO</em> — <a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">arXiv:2402.03300</a></li>
+    <li>Christiano et al., 2017 — <a href="https://arxiv.org/abs/1706.03741" target="_blank" rel="noopener">arXiv:1706.03741</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Beyond pairwise preference: can RLHF encode "be honest" and "be harmless" without also encoding "be boring/sycophantic"? — the constitutional-AI and pluralistic-alignment research fronts.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

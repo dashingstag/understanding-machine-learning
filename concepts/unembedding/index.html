@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unembedding and logits · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="unembedding" data-page-id="unembedding" data-root="../../">
+  <header class="top">
+    <h1>Unembedding and logits</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The output head turning hidden states back into vocabulary scores — often literally the input embedding transposed.</p>
+    <p class="doc-syms"><span data-notation="unembed-w"></span> <span data-notation="logits-z"></span> <span data-notation="softmax-sym"></span> <span data-notation="vocab"></span> <span data-notation="temperature"></span></p>
+    <h2>Statement</h2>
+    <p>The output head: $\mathbf{z} = \mathbf{h}_L \mathbf{W}_U^\top \in \mathbb{R}^{|\mathcal{V}|}$ turns the final hidden state into <code data-notation="logits-z">logits-z</code> over the <code data-notation="vocab">vocab</code>-sized vocabulary; <a class="doc-concept" href="../../site/notation.html#softmax"><code>softmax</code></a> turns logits into a distribution; <code data-notation="temperature">temperature</code> and top-p/top-k shape sampling. In weight-tied models $\mathbf{W}_U$ is the <code data-notation="embed-e">embed-e</code> table transposed — logits are literally similarity scores.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> — the entire stack exists to produce this one score vector: <code>next-token-prediction</code> trains on it, and every token ever generated was sampled from it. It's also the cheapest interpretability tool: "logit lens" reads intermediate states through the same head.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>One matmul.</strong> $\mathbf{h}_L$ (size <code data-notation="d-model">d-model</code>) × <code data-notation="unembed-w">unembed-w</code> ($|\mathcal{V}| \times d$) → <code data-notation="logits-z">logits-z</code>: one score per vocabulary item — a ~33M-row matmul for a 50k vocab.</li>
+    <li><strong>Weight tying.</strong> Input table and output head shared: halves that slice of <code data-notation="n-params">n-params</code>, and makes "the model prefers tokens similar to its final state" literally true.</li>
+    <li><strong>From scores to tokens.</strong> <a class="doc-concept" href="../../site/notation.html#softmax"><code>softmax</code></a> normalizes; argmax = greedy, <code data-notation="temperature">temperature</code> reshapes (τ→0: greedy; τ→∞: uniform), top-p/top-k truncate the tail — decode policy lives here (<a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a>).</li>
+    <li><strong>Logit lens.</strong> Project <em>any</em> layer's hidden state through $\mathbf{W}_U$: you see the model's "current guess" crystallize layer by layer — a standard <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> probe.</li>
+    <li><strong>Vocabulary quirks surface here.</strong> Multi-token numbers, split words — <a class="doc-concept" href="../../concepts/tokenization/playback.html"><code>tokenization</code></a> artefacts become logit-space artefacts.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>$d = 4$ state $\mathbf{h} = [1, 0, 0.5, -0.5]$, three candidate unembedding rows: cat $[0.9, 0.1, 0.4, -0.4]$, dog $[0.2, 0.8, 0.1, 0]$, the $[0, 0, 1, 1]$.</p>
+    <ul>
+    <li>$z_{cat} = 0.9 + 0 + 0.2 + 0.2 = 1.3$; $z_{dog} = 0.2$; $z_{the} = 0$.</li>
+    <li>Softmax(τ=1): $p_{cat} = e^{1.3}/(e^{1.3}+e^{0.2}+1) \approx 3.67/5.9 \approx 0.62$.</li>
+    <li>τ=2: exponents halve → $p_{cat} \approx 0.48$ — flatter; τ=0.5: $\approx 0.83$ — sharper. One matmul, one dial.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Vaswani et al. (tied embeddings) — <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arXiv:1706.03762</a></li>
+    <li>Press &amp; Wolf, <em>Using the Output Embedding to Improve Language Models</em> — <a href="https://arxiv.org/abs/1608.05859" target="_blank" rel="noopener">arXiv:1608.05859</a></li>
+    <li>nostalgebraist, <em>interpreting GPT: the logit lens</em> (blog, 2020)</li>
+    <li>Holtzman et al., <em>The Curious Case of Neural Text Degeneration</em> (nucleus sampling) — <a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">arXiv:1904.09751</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Logit-lens readings suggest mid-layer states already "know" the answer — what do late layers still add? — <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> open thread.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

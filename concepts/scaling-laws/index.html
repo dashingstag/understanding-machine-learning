@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scaling laws · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="scaling-laws" data-page-id="scaling-laws" data-root="../../">
+  <header class="top">
+    <h1>Scaling laws</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Empirical power laws linking loss to compute, parameters and data — Chinchilla and what survives of it.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="n-params"></span> <span data-notation="data-d"></span> <span data-notation="compute-c"></span> <span data-notation="flop"></span></p>
+    <h2>Statement</h2>
+    <p>Empirical power laws: test <code data-notation="loss-l">loss-l</code> falls as a smooth power of <code data-notation="n-params">n-params</code> $N$, <code data-notation="data-d">data-d</code> $D$ and <code data-notation="compute-c">compute-c</code> $C$ — $L(N,D) = E + A/N^{\alpha} + B/D^{\beta}$ with $\alpha,\beta \approx 0.3$ (Kaplan et al. 2020; Hoffmann et al. 2022). The <code>chinchilla</code> result: at fixed compute, train compute-optimally at $D \approx 20N$ — most models were under-trained, not too small.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — scaling laws are how labs turn budget into architecture: they predict the final loss of a $10^{25}$-FLOP run from small-scale extrapolation, so the billion-dollar decision is made on a curve, not a hunch. They're the field's main forecasting instrument and the premise behind <code>emergent-abilities</code> debates.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The observation.</strong> On log–log axes, loss vs each factor is linear over 6+ orders of magnitude — <code>kaplan-laws</code>.</li>
+    <li><strong>Chinchilla.</strong> Fixed $C$: loss is U-shaped in $N$ — too big wastes FLOPs on params, too small wastes them on data. Optimum: $N^* \propto C^{0.5}$, $D^* \propto C^{0.5}$, ratio ≈ 20 tokens/param.</li>
+    <li><strong>Predictive use.</strong> Fit exponents at $10^{18}$–$10^{21}$ FLOPs, extrapolate to $10^{25}$ — Muennighoff &amp; Hoffmann style; modern labs report it works within ~2%.</li>
+    <li><strong>What they miss.</strong> Capabilities (not loss) can appear discontinuously — <code>emergent-abilities</code> — and downstream tasks correlate imperfectly (<a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a>, <code>goodhart-law</code>).</li>
+    <li><strong>The other axis.</strong> <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a> add test-time compute: loss vs inference FLOPs also obeys law-like curves — the post-2024 scaling frontier.</li>
+    <li><strong>Data limits.</strong> Repeated-epoch scaling decays (Muennighoff et al., arXiv:2305.17493) — fresh <code>training-data</code> is the binding constraint.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Chinchilla sizing: budget $C = 6\times10^{23}$ FLOPs.</p>
+    <ul>
+    <li>$6ND = C$ and $D = 20N$ → $120N^2 = C$ → $N^* = \sqrt{5\times10^{21}} \approx 7.1\times10^{10}$ → ~70B params, ~1.4T tokens — the recipe LLaMA-65B later validated.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Kaplan et al. — <a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">arXiv:2001.08361</a></li>
+    <li>Hoffmann et al., Chinchilla — <a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">arXiv:2203.15556</a></li>
+    <li>Muennighoff et al., <em>Scaling Data-Constrained LMs</em> — <a href="https://arxiv.org/abs/2305.17493" target="_blank" rel="noopener">arXiv:2305.17493</a></li>
+    <li>Wei et al., emergent abilities — <a href="https://arxiv.org/abs/2206.07682" target="_blank" rel="noopener">arXiv:2206.07682</a></li>
+    <li>Schaeffer et al., <em>Are Emergent Abilities a Mirage?</em> — <a href="https://arxiv.org/abs/2304.15004" target="_blank" rel="noopener">arXiv:2304.15004</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Why power laws at all — which property of data/model makes the exponents universal? — an open theory problem.</li>
+    <li>Does the curve survive the shift to test-time compute and synthetic data, or does the field need new laws? — <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a>, <code>training-data</code>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

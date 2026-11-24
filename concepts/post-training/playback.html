@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post-training · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="post-training" data-page-id="post-training" data-root="../../">
+  <header class="top">
+    <h1>Post-training and alignment</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>The pipeline</h3>
+    <svg id="anim" viewBox="0 0 300 190"></svg>
+    <label>stage: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="4" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="From base to product">
+      <h2>From text-completer to assistant</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="christiano">Paul Christiano</span>'s 2017
+          "Deep RL from Human Preferences" laid the whole scheme out
+          five years before InstructGPT made it famous — same idea, tiny
+          models.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Post-training is ~1–5% of total compute but ~90% of perceived
+          product quality — the stage where "a model" becomes "a
+          brand".</p>
+      </aside>
+      <p>A <a data-concept-link="pretraining">pretrained</a> model
+        completes text — prompts included. It can't follow instructions,
+        has no refusals, and absorbed the whole internet's tone. The
+        pipeline on the right is how it becomes an assistant.</p>
+    </section>
+
+    <section class="frame" data-title="SFT">
+      <h2>Stage 1 — imitation</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>A few thousand curated demonstrations can install chat format
+          on a 70B base — SFT is shockingly sample-efficient because
+          capability already exists; only the <em>interface</em> is
+          missing.</p>
+      </aside>
+      <p><a data-concept-link="sft">Supervised fine-tuning</a>: imitate
+        expert demonstrations — instruction → ideal response. Same
+        `cross-entropy` machinery, new distribution: format, tone, "as
+        an AI" boundaries all arrive here.</p>
+    </section>
+
+    <section class="frame" data-title="Preferences">
+      <h2>Stage 2 — learn what 'better' means</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Human raters rank <em>pairs</em> of completions — cheaper and
+          more consistent than absolute scores. Bradley–Terry turns
+          rankings into a scalar
+          <a data-concept-link="reward-models">reward model</a>.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><span data-theorem="goodhart-law">Goodhart</span>: the moment
+          the reward model is optimized, it stops being a good measure —
+          reward hacking, sycophancy and verbosity bias are all this one
+          law at work.</p>
+      </aside>
+      <p>Humans can't score millions of samples, so a model learns the
+        ranking instead — then <a data-concept-link="rlhf">RLHF</a>
+        pushes the <a data-concept-link="pi-policy">policy</a> up that
+        learned gradient, `rlhf-obj`.</p>
+    </section>
+
+    <section class="frame" data-title="Two roads">
+      <h2>Stage 3 — optimize: PPO or DPO</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="dpo">DPO</a> (Rafailov et al. 2023)
+          derives the same preference optimum closed-form: the reward
+          model cancels out and alignment becomes a supervised loss on
+          pairs — now the default in open models.</p>
+      </aside>
+      <p><a data-concept-link="rlhf">PPO</a>: sample responses, score
+        with the RM, ascend with a
+        <span data-notation="kl-div">KL leash</span> to the SFT policy.
+        <a data-concept-link="dpo">DPO</a>: skip sampling entirely —
+        `dpo-loss` directly re-weights log-probs of chosen vs rejected.
+        Same destination, different machinery.</p>
+    </section>
+
+    <section class="frame" data-title="Verifiable RL">
+      <h2>The new stage — RL where answers check</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Math answers and code tests grade themselves — so RL can use
+          ground truth instead of a learned reward. That switch, scaled,
+          is what produced <a data-concept-link="reasoning-models">reasoning
+          models</a>.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>GRPO-style group baselines replaced PPO's value network in
+          this regime — the recipe behind DeepSeek-R1 and the
+          'thinking' mode in every 2025+ frontier model.</p>
+      </aside>
+      <p><a data-concept-link="verifiable-rewards">Verifiable rewards</a>
+        close the loop where reward models fail: no hacking a unit test.
+        The frontier pipeline now ends here, not at preference RL.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: 5-stage pipeline diagram; scrub highlights stage
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const ST = [
+      ["base model", "pretrained — completes text, no manners"],
+      ["SFT", "imitate demonstrations — format + helpfulness"],
+      ["preference pairs", "humans rank outputs — the raw signal"],
+      ["RM / DPO", "learn 'better' — scalar reward or closed form"],
+      ["RL (PPO/GRPO)", "optimize reward − KL; verifiable where possible"]
+    ];
+    const Y0 = 22, RH = 26, G = 8;
+    const rows = ST.map(([s], i) => {
+      const y = Y0 + i * (RH + G);
+      const r = el("rect", { x: 45, y, width: 200, height: RH, rx: 6,
+        fill: "#161b22", stroke: "#30363d" });
+      const t = el("text", { x: 145, y: y + 17, "text-anchor": "middle",
+        "font-size": 10.5, fill: "#c9d1d9" });
+      t.textContent = s; svg.appendChild(r); svg.appendChild(t);
+      if (i) {
+        const a = el("text", { x: 145, y: y - 2, "text-anchor": "middle",
+          "font-size": 10, fill: "#58a6ff" });
+        a.textContent = "↓"; svg.appendChild(a);
+      }
+      return { r, t };
+    });
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      rows.forEach((b, j) => {
+        const on = j === i;
+        b.r.setAttribute("stroke", on ? "#58a6ff" : "#30363d");
+        b.r.setAttribute("fill", on ? "#1c3550" : "#161b22");
+      });
+      lab.textContent = ST[i][0];
+      info.textContent = ST[i][1];
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 5; paint(i); };
+    const start = () => { timer = setInterval(tick, 1800); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

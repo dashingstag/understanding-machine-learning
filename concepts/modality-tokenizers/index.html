@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modality tokenizers · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="modality-tokenizers" data-page-id="modality-tokenizers" data-root="../../">
+  <header class="top">
+    <h1>Modality tokenizers</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">How pixels, frames and waveforms become transformer-legible input — ViT patches, VQ codes, spectrogram slices.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="vocab"></span></p>
+    <h2>Statement</h2>
+    <p>The front-end that turns non-text data into the <code data-notation="embed-e">embed-e</code>-shaped sequences a <a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> consumes: image patches + linear projection (ViT), vector-quantized codes (VQ-VAE/codebooks), spectrogram slices (audio), frame stacks (video). Each produces "tokens" in the functional sense — indexable units of a learned vocabulary.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/multimodal-models/playback.html"><code>multimodal-models</code></a> — the trunk only eats vectors in a sequence; this is where every modality is made legible. The choice of tokenizer sets the token budget (context cost), the granularity ceiling (OCR small text), and whether generation is even possible (<a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> decoders vs autoregressive codecs).</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Patchify (ViT).</strong> Image → non-overlapping $P{\times}P$ patches → linear projection to <code data-notation="d-model">d-model</code> + position. 224px at $P{=}16$ → 196 tokens; ~576 typical for LLM-attached vision.</li>
+    <li><strong>VQ codebooks.</strong> Learned discrete codes: encoder → nearest entry in a <code data-notation="vocab">vocab</code>-sized codebook — images become <em>discrete</em> tokens a language model can literally predict (DALL·E-1, Parti-style).</li>
+    <li><strong>Audio.</strong> Mel spectrogram → slice along time → project (Whisper, AudioLM); neural codecs (EnCodec, SoundStream) give discrete audio tokens for generation.</li>
+    <li><strong>Video.</strong> Tubelet/3-D patching — space×time tokens; cost scales brutally: frames × patch count is why long-video understanding is expensive.</li>
+    <li><strong>Continuous vs discrete.</strong> Continuous patch features → understand; discrete codes → generate. Some stacks do both (understand via patches, generate via diffusion <a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>A 448×448 screenshot into an LLM:</p>
+    <ul>
+    <li>$P = 14$: 32×32 = 1024 patch tokens + text → eats a third of an 8k context; that's why "describe this screenshot" has a literal budget the same way a paragraph does.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Dosovitskiy et al., ViT — <a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener">arXiv:2010.11929</a></li>
+    <li>Oord et al., VQ-VAE — <a href="https://arxiv.org/abs/1711.00937" target="_blank" rel="noopener">arXiv:1711.00937</a></li>
+    <li>Esser et al., VQGAN — <a href="https://arxiv.org/abs/2012.09841" target="_blank" rel="noopener">arXiv:2012.09841</a></li>
+    <li>Radford et al., Whisper — <a href="https://arxiv.org/abs/2212.04356" target="_blank" rel="noopener">arXiv:2212.04356</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Token-free vision at LLM scale (continuous pixels in) — does patch granularity ever stop mattering, or is the budget the law?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

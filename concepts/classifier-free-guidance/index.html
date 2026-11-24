@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classifier-free guidance · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="classifier-free-guidance" data-page-id="classifier-free-guidance" data-root="../../">
+  <header class="top">
+    <h1>Classifier-free guidance</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Amplifying prompt adherence by extrapolating away from an unconditional pass — the guidance-scale knob.</p>
+    <p class="doc-syms"><span data-notation="eps-noise"></span> <span data-notation="beta"></span></p>
+    <h2>Statement</h2>
+    <p>Steer <a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> sampling toward the prompt by running the denoiser twice — conditioned $\epsilon_\theta(x_t, c)$ and unconditioned $\epsilon_\theta(x_t, \varnothing)$ — and extrapolating: $\hat\epsilon = \epsilon_{uncond} + s\,(\epsilon_{cond} - \epsilon_{uncond})$. The guidance scale $s$ (typically 1.5–12) is the dial every prompt UI exposes: higher = prompt-faithful, lower = freer.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> — text conditioning alone produces weak adherence; CFG is what makes prompts actually bind. It's also the source of diffusion's signature failure modes (saturated colors, artefacts at high $s$) — knowing what the knob <em>does</em> explains what it breaks.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Two passes.</strong> Same network, run once with conditioning dropped (~10% of training examples drop the condition so the model learns both) — no separate classifier needed.</li>
+    <li><strong>The extrapolation.</strong> Difference $(\epsilon_{cond} - \epsilon_{uncond})$ points "toward the prompt"; scaling by $s&gt;1$ amplifies it — literally walking further in the prompt direction.</li>
+    <li><strong>The tradeoff.</strong> $s$ high → sharp adherence, distorted distribution, artefacts and desaturation; $s$ low → diverse, natural, loosely-on-prompt. Negative $s$ explores the <em>opposite</em>.</li>
+    <li><strong>Modern patches.</strong> Guidance rescale, interval guidance (apply only at certain $t$), distilled CFG (bake guidance in, halve the cost) — the production refinements.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>$s = 7.5$ (the SD default): the noise estimate is pushed 7.5× in the conditional direction — equivalent to saying "the prompt matters 7.5 times more than the unconditional prior". At $s = 1$: plain conditional sampling; $s = 0$: ignore the prompt entirely.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Ho &amp; Salimans — <a href="https://arxiv.org/abs/2207.12598" target="_blank" rel="noopener">arXiv:2207.12598</a></li>
+    <li>Lin et al., *Common Diffusion Noise Schedules and Sample Steps are Flawed* (guidance rescale) — <a href="https://arxiv.org/abs/2305.08891" target="_blank" rel="noopener">arXiv:2305.08891</a></li>
+    <li>Kynkäänniemi et al., interval guidance — <a href="https://arxiv.org/abs/2404.13040" target="_blank" rel="noopener">arXiv:2404.13040</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Guidance-free generation (autoguidance, distilled CFG) — is the double-forward tax permanently buyable, or only deferrable?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

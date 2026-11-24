@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tool calling · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="tool-calling" data-page-id="tool-calling" data-root="../../">
+  <header class="top">
+    <h1>Tool calling</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The function-call protocol an agent acts through — schemas, arguments, results fed back as context.</p>
+    <p class="doc-syms"><span data-notation="logits-z"></span> <span data-notation="vocab"></span></p>
+    <h2>Statement</h2>
+    <p>The I/O convention that lets a model act: tools are declared as JSON schemas (name, description, typed arguments); the model emits a specially-formatted completion naming a function + arguments; a wrapper executes it and feeds the result back as tokens. Every act in an <code>agent-loop</code> bottoms out here.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a> — the loop's "act" phase is just this protocol, repeated. The schema design (names, descriptions, error formats) decides how reliably the model picks the right tool — tool calling is an interface-design problem as much as a capability.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Schema as prompt.</strong> Tool descriptions live in the system prompt (or a trained special-token channel) — description quality is a routing decision, literally what the model reads.</li>
+    <li><strong>The call.</strong> Structured output: `{"name": "search", "arguments": {"q": "..."}}` — emitted under schema-constrained decoding so it's parseable by construction.</li>
+    <li><strong>The result.</strong> Tool output becomes a tool-role message in context — the model "observes" only through tokens; errors should be readable (LLM-first error design).</li>
+    <li><strong>Parallel + chained calls.</strong> Modern APIs emit multiple calls per turn; sequencing and dependency handling is scaffold work, not model work.</li>
+    <li><strong>Failure surface.</strong> Hallucinated arguments, wrong tool, injected instructions in results — tool security is input validation all over again (see <a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a>).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p><code>get_weather(city: string)</code> schema registered:</p>
+    <ul>
+    <li>User: "Paris tomorrow?" → model emits <code>get_weather("Paris")</code> → API returns <code>{temp: 18, rain: 0.7}</code> → model composes the answer citing the result — three turns, one visible reply.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>OpenAI function calling docs (2023) — the schema convention</li>
+    <li>Schick et al., Toolformer — <a href="https://arxiv.org/abs/2302.04761" target="_blank" rel="noopener">arXiv:2302.04761</a></li>
+    <li>Qin et al., ToolLLM/Berkeley function-calling leaderboard — <a href="https://arxiv.org/abs/2307.16789" target="_blank" rel="noopener">arXiv:2307.16789</a></li>
+    <li>Anthropic MCP spec — modelcontextprotocol.io</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Learned tool synthesis — agents that write their own tools (Voyager- style skill libraries) vs fixed registries.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

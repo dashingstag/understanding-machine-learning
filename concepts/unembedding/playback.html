@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unembedding and logits · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="unembedding" data-page-id="unembedding" data-root="../../">
+  <header class="top">
+    <h1>Unembedding and logits</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Logit lens: guess per layer</h3>
+    <svg id="anim" viewBox="0 0 300 200"></svg>
+    <label>layer: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="11" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="One matmul out">
+      <h2>One matmul back to vocabulary</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Input and output tables are usually <em>tied</em> — the same
+          <span data-notation="weights-theta">weights</span> transposed.
+          So a logit is literally "how similar is the final state to this
+          token's <a data-concept-link="embeddings">embedding</a>".</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>This head is ~10–30% of small models' parameters — the
+          <span data-notation="vocab">vocabulary</span> × <span
+          data-notation="d-model">width</span> matmul is no afterthought.
+          For GPT-2: 50,257 × 768 ≈ 38.6M of its 124M params.</p>
+      </aside>
+      <p>The stack ends with a <span data-notation="d-model">$d$</span>-d
+        hidden state. The <span data-notation="unembed-w">unembedding
+        matrix</span> scores it against every vocabulary row →
+        <span data-notation="logits-z">logits</span> →
+        <span data-notation="softmax-sym">softmax</span> → probabilities.
+        One pass, one distribution, one sampled token.</p>
+    </section>
+
+    <section class="frame" data-title="Logit lens">
+      <h2>The logit lens — the cheapest probe</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Run layer-12's hidden state through the output head early and
+          you often already see the answer — the model's guess crystallizes
+          before the stack finishes. That trick (nostalgebraist, 2020) is
+          free — it's why the panel can show "guesses per layer".</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="interpretability">Interpretability</a>
+          teams use tuned lenses — learned fixes to the raw head — to
+          decode middle layers faithfully, e.g. reading when a model
+          "decided" to hallucinate.</p>
+      </aside>
+      <p>Because every sublayer writes into the same residual stream,
+        <em>any</em> layer's state can be projected to vocabulary space.
+        Watch the distribution sharpen layer by layer — that's the
+        model "making up its mind" in public.</p>
+    </section>
+
+    <section class="frame" data-title="Sampling">
+      <h2>From scores to a choice</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-notation="temperature">Temperature</span> τ rescales
+          logits before softmax: τ→0 collapses to greedy, large τ flattens
+          toward uniform. Top-p keeps only the smallest set of tokens
+          covering mass p — the "nucleus".</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every "creativity" slider in a product is this paragraph:
+          temperature for flatness, top-p/top-k for tail truncation,
+          penalties for repetition — all downstream of the same logits.
+          See <a data-concept-link="inference-efficiency">inference</a>.</p>
+      </aside>
+      <p>Deterministic systems end here in a probability simplex — the
+        only randomness in the model is the sampling step. Decode policy
+        is a product decision layered on top of identical machinery.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: "logit lens" — p("Paris") crystallizes across 12 layers
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const CANDS = ["Paris", "France", "London", "city"];
+    const PX = 30, PW = 240, TOP = 24, ROW = 38;
+    CANDS.forEach((c, i) => {
+      const t = el("text", { x: PX, y: TOP + i * ROW + 12, "font-size": 10,
+        fill: "#c9d1d9" }); t.textContent = c; svg.appendChild(t);
+      svg.appendChild(el("rect", { x: PX + 50, y: TOP + i * ROW + 2,
+        width: PW - 60, height: 14, fill: "#161b22", stroke: "#30363d",
+        rx: 3 }));
+    });
+    const bars = CANDS.map((c, i) => {
+      const b = el("rect", { x: PX + 50, y: TOP + i * ROW + 2, height: 14,
+        fill: "#58a6ff", rx: 3 }); svg.appendChild(b); return b; });
+    const pcts = CANDS.map((c, i) => {
+      const t = el("text", { x: PX + 54 + PW - 60, y: TOP + i * ROW + 12,
+        "font-size": 9, fill: "#9aa" }); svg.appendChild(t); return t; });
+    // prob trajectories (logit-lens style): answer locks in ~layer 8
+    const P = l => {
+      const t = l / 11;
+      const a = 0.05 + 0.9 * Math.max(0, t - 0.45) / 0.55; // Paris
+      const b = 0.15 + 0.25 * t;                            // France
+      const c = 0.35 * (1 - t) + 0.03;                      // London fades
+      const d = 0.45 * (1 - t) + 0.02;                      // city fades
+      const s = a + b + c + d; return [a/s, b/s, c/s, d/s]; };
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(l) {
+      const ps = P(l);
+      ps.forEach((p, i) => {
+        bars[i].setAttribute("width", (p * (PW - 60)).toFixed(1));
+        pcts[i].textContent = (p * 100).toFixed(0) + "%";
+      });
+      lab.textContent = l;
+      info.textContent = l < 4 ? "early layers: still ambiguous — several cities plausible."
+        : l < 8 ? "mid layers: the answer begins to dominate."
+        : "late layers: 'Paris' is decided — the head just reads it off.";
+      scrub.value = l;
+    }
+    let l = 0, timer;
+    const tick = () => { l = (l + 1) % 12; paint(l); };
+    const start = () => { timer = setInterval(tick, 800); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); l = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diffusion models · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="diffusion-models" data-page-id="diffusion-models" data-root="../../">
+  <header class="top">
+    <h1>Diffusion and flow generation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Noise → image (scrub t)</h3>
+    <canvas id="anim" width="280" height="150" style="width:100%"></canvas>
+    <label>t = <strong id="scrub-label">1.00</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The other half">
+      <h2>The other half of generative ML</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="ho-jonathan">Jonathan Ho</span>'s DDPM
+          (2020) took a 2015 thermodynamics analogy and made it beat
+          GANs on FID — within two years, image generation was
+          diffusion's field.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Images, video, audio, protein structure, robot policies —
+          anywhere output must be high-dimensional and multimodal, this
+          family won. Text stays autoregressive… for now.</p>
+      </aside>
+      <p>Autoregressive models emit one token at a time; diffusion
+        denoises the <em>whole output at once</em>. The panel runs the
+        reverse process: pure noise on the left edge of the scrub,
+        structure condensing out as $t \to 0$.</p>
+    </section>
+
+    <section class="frame" data-title="Noise in, noise out">
+      <h2>Learn the noise you added</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The training objective is almost embarrassingly simple: pick a
+          random noise level, add Gaussian noise, and train the network
+          to predict which noise was added — `ddpm-loss`. That's the
+          entire supervision signal.</p>
+      </aside>
+      <div data-formula="ddpm-loss"></div>
+      <p>Forward: corrupt $x_0$ to $x_t$ by schedule. Learn:
+        $\epsilon_\theta(x_t, t) \approx \epsilon$. Sample: start at pure
+        <span data-notation="eps-noise">noise</span>, peel it off in
+        steps — DDPM stochastic, DDIM/ODE deterministic and ~20× fewer
+        steps.</p>
+    </section>
+
+    <section class="frame" data-title="Latent space">
+      <h2>Do it small: latent diffusion</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="latent-diffusion">Stable Diffusion</a>'s
+          trick was compression, not cleverness: denoise a 64×64 latent
+          instead of 512² pixels — ~64× less work, consumer-GPU
+          friendly.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Same trick runs everywhere: video latents, audio latents —
+          compress to where details live cheaply, diffuse there,
+          decode once at the end.</p>
+      </aside>
+      <p>A VAE encoder squeezes pixels to a smooth latent; diffusion runs
+        there; the decoder expands the result once. The expensive part
+        got 64× cheaper for nearly free quality.</p>
+    </section>
+
+    <section class="frame" data-title="Guidance & flow">
+      <h2>Steering: guidance and flow matching</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="classifier-free-guidance">CFG</a> runs
+          the model twice per step — once with the prompt, once without
+          — and extrapolates away from the unconditional answer. The
+          "guidance scale" slider is that subtraction.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="flow-matching">Flow matching</a> +
+          diffusion transformers (DiT) is the 2024+ recipe — SD3, Flux,
+          Sora-class video. Straighter paths, fewer steps, better
+          scaling.</p>
+      </aside>
+      <p>Text conditioning comes in through cross-attention; guidance
+        sharpens it. Then the field swapped the formulation itself:
+        learn the velocity field from noise to data — same family, less
+        stochastic baggage.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: noise -> "image" — a checkerboard signal emerging from noise
+    const cv = document.getElementById("anim"), cx = cv.getContext("2d");
+    const W = 28, H = 15, N = W * H;
+    const sig = [], nz = [];
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      sig.push(Math.sin(x * 0.9) * Math.cos(y * 1.1) > 0 ? 1 : -1);
+      nz.push(rnd() * 2 - 1);
+    }
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(v) {
+      const t = 1 - v / 100; // t: 1 = pure noise, 0 = clean
+      const img = cx.createImageData(W, H);
+      for (let i = 0; i < N; i++) {
+        const val = sig[i] * (1 - t) + nz[i] * t * 1.4;
+        const c = Math.max(0, Math.min(255, 128 + val * 110));
+        img.data[i*4] = c * 0.5; img.data[i*4+1] = c * 0.75;
+        img.data[i*4+2] = c; img.data[i*4+3] = 255;
+      }
+      cx.putImageData(img, 0, 0);
+      cx.imageSmoothingEnabled = false;
+      cx.drawImage(cv, 0, 0, W, H, 0, 0, cv.width, cv.height);
+      lab.textContent = t.toFixed(2);
+      info.textContent = t > 0.8 ? "almost pure noise — early steps just find global structure."
+        : t > 0.3 ? "signal condensing: the model peels off predictable noise."
+        : "late steps: fine detail crystallizes; each step is one network pass.";
+      scrub.value = v;
+    }
+    let v = 0, timer;
+    const tick = () => { v = (v + 2) % 102; paint(v); };
+    const start = () => { timer = setInterval(tick, 90); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); v = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

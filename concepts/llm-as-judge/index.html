@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM-as-judge · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="llm-as-judge" data-page-id="llm-as-judge" data-root="../../">
+  <header class="top">
+    <h1>LLM-as-judge</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Using a model to grade a model — the scalable but biased evaluator modern evals lean on.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>Using a language model to grade another model's outputs — pairwise preference, rubric scores, or pass/fail — where no answer key exists. The scalable evaluator <a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> leans on for open-ended tasks (chat quality, agent trajectories, safety refusals), with documented biases: verbosity, position, self-preference, format favouritism.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> — most valuable behaviours can't be checked by string match; a judge model is how they get graded at all. Its biases set the noise floor of every open-ended benchmark result and are a <code>goodhart-law</code> surface: models get tuned to please the judge.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Modes.</strong> Pairwise (which answer is better — position-swapped to cancel order bias), rubric score (1–10 on defined criteria), and G-Eval-style (grade against a checklist of steps).</li>
+    <li><strong>Known biases.</strong> Position bias (first/second swap changes verdicts), verbosity bias (longer wins), self-preference (judges favour their own family), and authority mimicry (confident tone beats correct hedging).</li>
+    <li><strong>Calibration.</strong> Judge vs human agreement is the reported metric — ~80% on MT-Bench-class tasks; lower on technical correctness where the judge can't verify claims.</li>
+    <li><strong>Judge drift.</strong> Same judge, different versions → different rankings — results are only comparable under a pinned judge, prompt and protocol (the reproducibility requirement).</li>
+    <li><strong>Meta-risk.</strong> Training against the judge bakes its taste into the model — eval-judge and training-judge circularity is a real contamination-adjacent worry.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>MT-Bench-style pairwise grade: answer A (concise, correct) vs B (verbose, mostly correct):</p>
+    <ul>
+    <li>Judge picks B ~60% of the time — verbosity bias measured directly by shuffling order: if verdicts flip, the judge read length, not quality. Position swap + rubric anchoring is the standard mitigation.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Zheng et al., MT-Bench/judging LLM judges — <a href="https://arxiv.org/abs/2306.05685" target="_blank" rel="noopener">arXiv:2306.05685</a></li>
+    <li>Liu et al., G-Eval — <a href="https://arxiv.org/abs/2303.16634" target="_blank" rel="noopener">arXiv:2303.16634</a></li>
+    <li>Zheng et al., Arena (Elo rating) — same paper as above</li>
+    <li>Bavaresco et al., *LLMs instead of Human Judges? A Large Scale Empirical Study* — <a href="https://arxiv.org/abs/2406.18403" target="_blank" rel="noopener">arXiv:2406.18403</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Judge ensembles/rubrics that reach &gt;95% human agreement on technical domains — or is the ceiling set by what judges can themselves verify?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

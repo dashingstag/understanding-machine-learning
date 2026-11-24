@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backpropagation · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="backpropagation" data-page-id="backpropagation" data-root="../../">
+  <header class="top">
+    <h1>Backpropagation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The chain rule applied through the computation graph — the algorithm that produces every gradient in this map.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="weights-theta"></span> <span data-notation="learning-rate"></span></p>
+    <h2>Statement</h2>
+    <p>Reverse-mode automatic differentiation applied to the loss graph: for each parameter, $\partial\mathcal{L}/\partial\theta_i$ is computed by propagating error signals backward through the chain rule — every intermediate node receives its "blame" and passes blame to its inputs. Cost ≈ one extra forward pass; output = the full $\nabla_\theta\mathcal{L}$ that <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a> consumes.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/ml-foundations/playback.html"><code>ml-foundations</code></a> — the loop "loss → gradient → update" only exists because backprop manufactures the gradient at tractable cost. Without it, deep learning computes one partial derivative per parameter per step — literally impossible at $10^{11}$ parameters.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Chain rule, cached.</strong> For $z = f(g(x))$: $\partial z/\partial x = f'(g(x))\,g'(x)$. Backprop stores each node's forward value, then multiplies local Jacobians backward — memoized differentiation.</li>
+    <li><strong>Reverse, not forward.</strong> One output (the scalar <code data-notation="loss-l">loss-l</code>) × millions of inputs ⇒ reverse mode wins: a single backward sweep produces <em>all</em> partials for ~2× forward cost, vs $N$ sweeps for forward mode.</li>
+    <li><strong>The computation graph.</strong> Frameworks record ops as nodes (matmul, activation, norm); each knows its local derivative; autograd walks the DAG — you write forward code, the backward is free.</li>
+    <li><strong>Pathologies.</strong> Repeated multiplication kills signals: sigmoid saturation → vanishing gradients; large weights → explosion — <a class="doc-concept" href="../../concepts/residual-normalization/playback.html"><code>residual-normalization</code></a> exists partly to keep the chain tame.</li>
+    <li><strong>Memory trade.</strong> Backward needs forward activations — activation checkpointing re-computes them to fit bigger models (<a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a> budgets this).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>$z = w x$ then $\mathcal{L} = (z - y)^2$, $x = 2, y = 1, w = 3$:</p>
+    <ul>
+    <li>Forward: $z = 6$, $\mathcal{L} = 25$.</li>
+    <li>Backward: $\partial\mathcal{L}/\partial z = 2(z-y) = 10$; $\partial z/\partial w = x = 2$ → $\partial\mathcal{L}/\partial w = 20$.</li>
+    <li>One backward sweep gives the update $w \leftarrow 3 - \eta\cdot20$ — same answer as symbolic differentiation, at graph-walk cost.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Rumelhart, Hinton &amp; Williams, *Learning representations by back-propagating errors*, Nature 1986 — the popularization</li>
+    <li>Linnainmaa, 1970 / Werbos, 1974 — earlier reverse-mode history</li>
+    <li>Baydin et al., <em>Automatic Differentiation in ML: a Survey</em> — <a href="https://arxiv.org/abs/1502.05767" target="_blank" rel="noopener">arXiv:1502.05767</a></li>
+    <li>3Blue1Brown ch.3 — <a href="https://www.youtube.com/watch?v=Ilg3gGewQ5U" target="_blank" rel="noopener">youtu.be/Ilg3gGewQ5U</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Is there a biologically plausible credit-assignment rule that backprop approximates? — neuroscience/ML crossover, still open.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

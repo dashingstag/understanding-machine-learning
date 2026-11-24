@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  Copy to concepts/<path>/playback.html, then:
+  1. set data-concept AND data-page-id to the node id in map.json
+     (data-page-id is shown in the header so the page can be referred to by name)
+  2. set data-root to the relative path back to the repo root (one "../" per folder level)
+  3. fix the asset paths below to match data-root
+  4. use shared notation: <div data-formula="id"></div>, <span data-notation="id"></span>
+     (ids in notation.json; add new ones there first).
+     In stories, wrap names in <span data-person="example-person">…</span> and theorems in
+     <span data-theorem="example-result">…</span> — ids live in lore.json; new ones go there first
+  5. to link to another concept's page, write <a data-concept-link="some-id">text</a>
+     — the address comes from the map, so folders can move without breaking links
+  6. run python tools/build.py  (pages are found by folder name; nothing to add to map.json)
+  7. keep the header's "Notes" link as href="index.md" — notes.js intercepts it to
+     open the editable notes panel (writes notes/<page-id>.md); without JS the
+     link still opens the concept's index.md
+
+  Animations that should keep running while the reader changes frames go in a
+  fixed right-side panel: put <aside class="anim-panel">…</aside> between
+  </header> and <main>, and drive it from a <script> at the bottom — start it
+  immediately on load, not on frameshow (it lives outside .frame, so frame
+  navigation never resets it). Interactive demos that belong to one frame stay
+  in <div class="widget"> inside that frame. Small line charts inside callouts
+  use the shared MiniChart helper (assets/charts.js): c.legend() renders an
+  HTML legend above the SVG, c.limit()/c.poly()/c.axis() draw the plot —
+  see assets/charts.js for the MiniChart pattern.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CONCEPT TITLE · playback</title>
+  <link rel="stylesheet" href="ROOT/site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="CONCEPT-ID" data-page-id="CONCEPT-ID" data-root="ROOT/">
+  <header class="top">
+    <h1>CONCEPT TITLE</h1>
+    <nav><a href="ROOT/site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <!-- optional: a persistent right-side animation panel (uncomment to use).
+       If the animation sweeps a parameter over time, include a manual scrub
+       slider (id="scrub"): dragging it pauses auto-play and renders that
+       position; the timer updates its value while playing.
+  <aside class="anim-panel">
+    <h3>Title of the animation</h3>
+    <svg id="anim" viewBox="0 0 320 220"></svg>
+    <label>t = <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+  -->
+
+  <main class="playback">
+    <section class="frame" data-title="Statement">
+      <h2>Statement</h2>
+      <p>Inline maths: $a^2 + b^2 = c^2$. A shared symbol: <span data-notation="example-symbol"></span>.
+        A shared formula with its breakdown:</p>
+      <div data-formula="example-formula"></div>
+    </section>
+
+    <section class="frame" data-title="Intuition">
+      <h2>Intuition</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>History and fun facts, written inside the frame they belong to — the page
+          shows them in the fixed left rail while this frame is active (stacked above
+          the content on narrow screens). Never collected into an end frame.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Green panel: applications and appearances outside pure maths.</p>
+      </aside>
+      <p>One idea per frame.</p>
+    </section>
+
+    <section class="frame" data-title="Try it">
+      <h2>Try it</h2>
+      <div class="widget">A live computation goes here.</div>
+    </section>
+  </main>
+
+  <script src="ROOT/site/map.js"></script>
+  <script src="ROOT/site/assets/page-id.js"></script>
+  <script src="ROOT/site/notation-data.js"></script>
+  <script src="ROOT/site/assets/notation.js"></script>
+  <script src="ROOT/site/lore-data.js"></script>
+  <script src="ROOT/site/assets/lore.js"></script>
+  <script src="ROOT/site/assets/notes.js"></script>
+  <script src="ROOT/site/assets/progress.js"></script>
+  <script src="ROOT/site/assets/playback.js"></script>
+  <script src="ROOT/site/assets/search.js"></script>
+</body>
+</html>

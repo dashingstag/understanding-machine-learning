@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformer architecture · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="transformer-architecture" data-page-id="transformer-architecture" data-root="../../">
+  <header class="top">
+    <h1>Transformer architecture</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>A token's climb up the stack</h3>
+    <svg id="anim" viewBox="0 0 300 220"></svg>
+    <label>block: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="11" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The pipeline">
+      <h2>The pipeline</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="vaswani">Ashish Vaswani</span>'s 2017 paper was
+          titled as a provocation — "Attention Is All You Need" — and the
+          provocation won: within five years RNNs were effectively extinct
+          at the frontier.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>GPT, Claude, Gemini, Llama, Grok, DeepSeek — every frontier text
+          model is this stack. Size, training and
+          <a data-concept-link="mixture-of-experts">sparsity</a> differ; the
+          block diagram does not.</p>
+      </aside>
+      <p>Text in $\to$ <a data-concept-link="tokenization">tokens</a> $\to$
+        <a data-concept-link="embeddings">vectors</a> $\to$ $L$ identical
+        blocks $\to$ <a data-concept-link="unembedding">vocabulary
+        scores</a>. Every block does exactly two things: mix across
+        positions (attention), then transform each position (FFN).</p>
+    </section>
+
+    <section class="frame" data-title="One block">
+      <h2>Anatomy of one block</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The residual stream — the <span data-notation="d-model">model
+          width</span>-sized highway each sublayer reads and writes — is
+          also what makes
+          <a data-concept-link="interpretability">mechanistic
+          interpretability</a> possible: you can read the draft, not just
+          the final answer.</p>
+      </aside>
+      <div data-formula="transformer-block"></div>
+      <p>Two sublayers, each wrapped the same way: normalize, compute, add
+        back to the stream. The <span data-notation="layernorm-s">layer
+        normalization</span> + residual pattern is the plumbing that keeps
+        gradients alive through 100+ layers —
+        <a data-concept-link="residual-normalization">torn down
+        separately</a>.</p>
+    </section>
+
+    <section class="frame" data-title="Mix vs transform">
+      <h2>Mix across positions, transform each one</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Attention is the <em>only</em> place tokens exchange
+          information — and it costs $\mathcal O(n^2)$ in context length
+          (<span data-theorem="attn-complexity">see the result</span>).
+          That single term shapes <a data-concept-link="kv-cache">KV
+          caches</a>, context windows and serving prices.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Parameter split inside a block is roughly ⅓ attention, ⅔ FFN.
+          The FFN is where most factual knowledge is believed to live —
+          attention is more like routing hardware.</p>
+      </aside>
+      <p><a data-concept-link="attention-mechanism">Attention</a> answers
+        "who should I look at?"; the <a data-concept-link="feedforward-layer">feed-forward
+        layer</a> answers "given what I gathered, what do I become?" Neither
+        works alone — pure attention just averages, pure FFN can't see
+        context.</p>
+    </section>
+
+    <section class="frame" data-title="The head">
+      <h2>Out the top: the unembedding</h2>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The output head is often literally the input table transposed —
+        'weight tying'. So a token's logit <em>is</em> an inner product
+        between its <a data-concept-link="embeddings">embedding</a> and the
+        final hidden state: the model scores candidates by similarity.</p>
+      </aside>
+      <p>The last hidden state meets the
+        <span data-notation="unembed-w">unembedding matrix</span> →
+        <span data-notation="logits-z">logits</span> →
+        <span data-notation="softmax-sym">softmax</span> → a distribution
+        over <span data-notation="vocab">vocabulary</span> items. Sampling
+        under <a data-concept-link="temperature">temperature</a> (or
+        top-p/top-k) is the only randomness in the whole system — see
+        <a data-concept-link="unembedding">the head page</a>.</p>
+    </section>
+
+    <section class="frame" data-title="Why it won">
+      <h2>Why this architecture won</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-theorem="bitter-lesson">The bitter lesson</span>
+          (Sutton): methods that leverage compute beat methods that
+          leverage human knowledge. The transformer is the architecture
+          most optimized for being scaled — which is why
+          <a data-concept-link="scaling-laws">scaling laws</a> are its
+          biography.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Everything is a matmul, a softmax or a norm — three GPU-shaped
+          primitives. <a data-concept-link="distributed-training">Distributed
+          training</a> loves it; a trillion-parameter variant is the same
+          code with bigger shapes.</p>
+      </aside>
+      <p>No recurrence → perfect parallel training. Residual paths →
+        constant-length gradient routes. Homogeneous blocks →
+        hardware-simple. The architecture wasn't proven better — it was
+        built to scale, and scale won.</p>
+      <p>Challengers exist — state-space models, linear attention — torn
+        down under <a data-concept-link="inference-efficiency">inference
+        efficiency</a>.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: a token pulse climbing 12 blocks; scrub = active block
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const L = 12, BW = 90, BH = 10, GAP = 6, OX = 105, OY = 16;
+    const labels = ["embed", ...Array.from({length: L}, (_, i) => `block ${i+1}`), "unembed → logits"];
+    const rows = [];
+    labels.forEach((lab, i) => {
+      const y = 204 - i * (BH + GAP);
+      const r = el("rect", { x: OX, y, width: BW, height: BH, rx: 3,
+        fill: i === 0 || i === L + 1 ? "#23303f" : "#161b22",
+        stroke: "#30363d" });
+      const t = el("text", { x: OX - 6, y: y + BH - 2, "text-anchor": "end",
+        "font-size": 8.5, fill: "#9aa" });
+      t.textContent = lab;
+      svg.appendChild(r); svg.appendChild(t); rows.push(r);
+    });
+    const pulse = el("rect", { x: OX - 4, y: 0, width: BW + 8, height: 4,
+      rx: 2, fill: "#58a6ff" });
+    svg.appendChild(pulse);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    scrub.max = L;
+    function paint(i) {
+      rows.forEach((r, j) => r.setAttribute("stroke",
+        j === i ? "#58a6ff" : "#30363d"));
+      const y = 204 - i * (BH + GAP) + BH - 4;
+      pulse.setAttribute("y", y - BH);
+      lab.textContent = i === 0 ? "embed" : `block ${i}`;
+      info.textContent = i === 0
+        ? "token id → embedding row; enters the residual stream."
+        : `residual stream passes block ${i}: attention mixes positions, FFN transforms each.`;
+      scrub.value = i;
+    }
+    let i = 0, dir = 1, timer;
+    const tick = () => { i += dir; if (i >= L || i <= 0) dir = -dir; paint(i); };
+    const start = () => { timer = setInterval(tick, 700); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; dir = 1; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Residuals and normalization · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="residual-normalization" data-page-id="residual-normalization" data-root="../../">
+  <header class="top">
+    <h1>Residuals and normalization</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The residual stream plus layer/RMS norm — the plumbing that makes 100-layer stacks trainable and legible.</p>
+    <p class="doc-syms"><span data-notation="layernorm-s"></span> <span data-notation="sigma-act"></span> <span data-notation="learning-rate"></span></p>
+    <h2>Statement</h2>
+    <p>Every transformer sublayer is wrapped as $x \mapsto x + \mathrm{sublayer}(\mathrm{Norm}(x))$: the skip connection keeps the residual stream intact, and <a class="doc-concept" href="../../site/notation.html#layernorm"><code>layernorm</code></a> rescales each position's vector to zero-mean/unit-variance (RMSNorm drops the mean subtraction). Together they keep gradients finite and signal readable through 100+ layers — see <a class="doc-concept" href="../../site/notation.html#transformer-block"><code>transformer-block</code></a> for where they sit.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> — without residual paths, a 96-layer stack's gradient vanishes long before layer 1 (<a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a> stalls); without norms, activations drift and LR tuning becomes impossible. This node is why depth is cheap, and why <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> can read the stream.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The skip.</strong> $x + f(x)$ gives every layer a direct identity path — gradients flow backward unimpeded; the sublayer learns a <em>delta</em>, not a replacement. (Residual learning: He et al. 2015, ResNet.)</li>
+    <li><strong>The stream.</strong> Residuals make the hidden state a <em>shared bus</em>: every sublayer reads it and writes back — the object <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> reads, <code>activation-steering</code> edits.</li>
+    <li><strong>The norm.</strong> <a class="doc-concept" href="../../site/notation.html#layernorm"><code>layernorm</code></a> = $(x-\mu)/\sigma \cdot \gamma + \beta$ per position. RMSNorm (Llama): $x/\mathrm{RMS}(x)\cdot g$, no mean — ~10% cheaper, same effect.</li>
+    <li><strong>Pre vs post.</strong> Original: post-norm $x + \mathrm{Norm}(f(x))$ — fragile at depth. Modern: pre-norm — norm inside the branch, identity path pure — what GPT/Llama use.</li>
+    <li><strong>Why not BatchNorm.</strong> Sequences have variable length and tiny effective batches — batch statistics are unstable; per-position normalization has no batch dependence.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Signal magnitude check: without residual, a 96-layer net with per-layer gain 1.05 sees forward scale $1.05^{96} \approx 108\times$ — and gradients shrink by the same factor backward. With the skip path, the gradient at layer 1 includes a copy of the output gradient <em>directly</em> — the identity term never multiplies below 1.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>He et al., <em>Deep Residual Learning</em> — <a href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener">arXiv:1512.03385</a></li>
+    <li>Ba et al., <em>Layer Normalization</em> — <a href="https://arxiv.org/abs/1607.06450" target="_blank" rel="noopener">arXiv:1607.06450</a></li>
+    <li>Zhang &amp; Sennrich, <em>RMSNorm</em> — <a href="https://arxiv.org/abs/1910.07467" target="_blank" rel="noopener">arXiv:1910.07467</a></li>
+    <li>Xiong et al., <em>On Layer Normalization in the Transformer Architecture</em> (pre-norm analysis) — <a href="https://arxiv.org/abs/2002.04745" target="_blank" rel="noopener">arXiv:2002.04745</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Do residual streams have privileged "channels" that carry the computation — and can deleting one lobotomize the model? — <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> / <code>activation-steering</code> territory.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

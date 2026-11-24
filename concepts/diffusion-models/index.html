@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diffusion and flow generation · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="diffusion-models" data-page-id="diffusion-models" data-root="../../">
+  <header class="top">
+    <h1>Diffusion and flow generation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Iterative denoising and flow matching — how images, video and audio are generated.</p>
+    <p class="doc-syms"><span data-notation="eps-noise"></span> <span data-notation="x-t"></span> <span data-notation="weights-theta"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>Generation by iterated denoising: forward — destroy data by adding Gaussian noise over $T$ steps; learn $\epsilon_\theta(x_t, t)$ to predict the noise (<a class="doc-concept" href="../../site/notation.html#ddpm-loss"><code>ddpm-loss</code></a>), then reverse — start from pure noise and denoise into a sample. <code>latent-diffusion</code> runs it in a VAE latent; <code>flow-matching</code> learns the velocity field directly; <code>classifier-free-guidance</code> controls prompt adherence.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — generative media is the other half of the field: images, video, audio, and increasingly robot actions. Different objective, different architecture family (U-Nets/diffusion transformers vs decoder stacks), different sampling economics — and the modality output head for <a class="doc-concept" href="../../concepts/multimodal-models/playback.html"><code>multimodal-models</code></a>.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Forward process.</strong> $x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon$ — a fixed corruption schedule, no learning.</li>
+    <li><strong>The objective.</strong> Train <code data-notation="eps-noise">eps-noise</code> predictor with <a class="doc-concept" href="../../site/notation.html#ddpm-loss"><code>ddpm-loss</code></a> — literally "guess the noise that was added", one per noise level.</li>
+    <li><strong>Reverse sampling.</strong> DDPM: stochastic reverse chain; DDIM/ ODE-solvers: deterministic, 20–50 steps instead of 1000.</li>
+    <li><strong>Latent space.</strong> <code>latent-diffusion</code>: compress pixels → denoise the latent → decode. 8× spatial compression is why SD ran on consumer GPUs.</li>
+    <li><strong>Conditioning.</strong> Text via cross-attention (CLIP/T5 embeddings); <code>classifier-free-guidance</code> extrapolates away from an unconditional pass — the "creativity vs prompt-faithfulness" dial.</li>
+    <li><strong>Flow matching.</strong> <code>flow-matching</code>: learn $dx/dt = v_\theta$ — the straight-path reformulation; DiT + flow is the 2024+ default (SD3, Flux, Sora-class).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Latent diffusion on a 512² image:</p>
+    <ul>
+    <li>VAE: 512² RGB → 64×64×4 latent — 64× fewer values to denoise.</li>
+    <li>50 DDIM steps ≈ $50 \times$ one UNet pass ≈ a few seconds on a consumer GPU — vs 1000+ pixel-space steps for 2020-era DDPM.</li>
+    <li>Guidance 7.5: $\hat\epsilon = \epsilon_{uncond} + 7.5(\epsilon_{cond}</li>
+    <li>\epsilon_{uncond})$ — the prompt pulls 7.5× harder.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Ho et al., DDPM — <a href="https://arxiv.org/abs/2006.11239" target="_blank" rel="noopener">arXiv:2006.11239</a></li>
+    <li>Song et al., DDIM — <a href="https://arxiv.org/abs/2010.02502" target="_blank" rel="noopener">arXiv:2010.02502</a></li>
+    <li>Rombach et al., LDM/Stable Diffusion — <a href="https://arxiv.org/abs/2112.10752" target="_blank" rel="noopener">arXiv:2112.10752</a></li>
+    <li>Ho &amp; Salimans, classifier-free guidance — <a href="https://arxiv.org/abs/2207.12598" target="_blank" rel="noopener">arXiv:2207.12598</a></li>
+    <li>Lipman et al., flow matching — <a href="https://arxiv.org/abs/2210.02747" target="_blank" rel="noopener">arXiv:2210.02747</a></li>
+    <li>Peebles &amp; Xie, DiT — <a href="https://arxiv.org/abs/2212.09748" target="_blank" rel="noopener">arXiv:2212.09748</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Diffusion-for-text: masked/continuous diffusion LMs vs autoregressive — an active frontier that could unify the two halves of the map.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

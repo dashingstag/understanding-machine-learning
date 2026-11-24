@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tensor parallelism · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="tensor-parallelism" data-page-id="tensor-parallelism" data-root="../../">
+  <header class="top">
+    <h1>Tensor parallelism</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Sharding each weight matrix across devices — how a single layer outgrows a single GPU.</p>
+    <p class="doc-syms"><span data-notation="weights-theta"></span></p>
+    <h2>Statement</h2>
+    <p>Shard each weight matrix itself: split $W \in \mathbb{R}^{d \times 4d}$ column-wise across GPUs (Megatron-LM style), each device computes its slice of the output, and partial results are combined by an all-reduce inside the block. Attention heads and FFN units partition naturally — the intra-layer axis of <a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a>.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a> — when a single layer exceeds one GPU's memory (or a node's worth of parallel efficiency), the matrix itself must be divided. TP is why layer shape and NVLink topology appear together in every training architecture diagram.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Column/row splits.</strong> FFN: split $W_1$ column-wise (each GPU owns a slice of hidden units), $W_2$ row-wise → one all-reduce per FFN. Attention: split by heads — embarrassingly parallel until output projection.</li>
+    <li><strong>The all-reduce tax.</strong> Two collectives per block per microbatch — microseconds on NVLink (~900GB/s), deadly across Ethernet: TP lives inside the node by construction.</li>
+    <li><strong>Sequence/context parallelism.</strong> Long-context training shards the sequence dimension too (Ring Attention, Ulysses) — TP's sibling for the attention dimension.</li>
+    <li><strong>Composition.</strong> TP(8) inside a node × PP across nodes × DP across replicas — the standard Megatron recipe for 100B+ models.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>FFN $W_1$: $12288 \times 49152$ on 8-way TP: each GPU holds $12288 \times 6144$ — computes its $6144$-slice of hidden activations; $W_2$ splits row-wise so the output is a partial sum → one all-reduce joins them. Attention with 128 heads: each GPU owns 16 heads outright.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Shoeybi et al., Megatron-LM — <a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">arXiv:1909.08053</a></li>
+    <li>Narayanan et al., <em>Efficient Large-Scale LM Training</em> — <a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">arXiv:2104.04473</a></li>
+    <li>Liu et al., Ring Attention — <a href="https://arxiv.org/abs/2310.01889" target="_blank" rel="noopener">arXiv:2310.01889</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Can TP escape the NVLink island (optical/switch fabric) or will topology always bound the intra-layer axis?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

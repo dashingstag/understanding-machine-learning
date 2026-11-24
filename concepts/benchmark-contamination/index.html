@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benchmark contamination · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="benchmark-contamination" data-page-id="benchmark-contamination" data-root="../../">
+  <header class="top">
+    <h1>Benchmark contamination</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Test data leaking into pretraining corpora — the quiet reason headline scores inflate.</p>
+    <p class="doc-syms"><span data-notation="data-d"></span> <span data-notation="perplexity-s"></span></p>
+    <h2>Statement</h2>
+    <p>Test data leaking into <code>training-data</code>: benchmark questions (or near-duplicates) present in the pretraining corpus turn a capability measure into a memorization check. Detected by n-gram overlap, per-example <code data-notation="perplexity-s">perplexity-s</code> anomalies, or canary strings — the first thing to rule out on any headline <a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> score.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a> — a contaminated benchmark measures recall, not skill, and contamination is nearly unavoidable when corpora are scraped at internet scale. It's the standard explanation when scores jump implausibly between model generations.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>How it gets in.</strong> Benchmarks are public text on the web; scrapers ingest them with everything else — GitHub issues, Quizlet decks, "MMLU answer key" pages.</li>
+    <li><strong>Direct vs indirect.</strong> Verbatim questions (easy to catch) vs paraphrases/translations/solutions written elsewhere (hard) — "effective contamination" is a spectrum.</li>
+    <li><strong>Detection.</strong> n-gram overlap audits, perplexity gaps (suspiciously low loss on "test" items), canary GUIDs (BIG-bench embeds <code>26b5c67b-…</code> strings whose presence in corpus proves ingestion), held-out private test sets.</li>
+    <li><strong>Mitigation.</strong> Decontamination pipelines (filter n-gram matches — standard but imperfect), dynamic/rotating benchmarks, private evals, post-hoc disclosure.</li>
+    <li><strong>Adjacent sins.</strong> Train-on-test fine-tuning, eval-set peeking in prompt engineering, judge-model training on the same data — <code>llm-as-judge</code> circularity.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>GPT-3's own audit (Brown et al.): flagged contaminated benchmarks showed inflated scores — e.g., removing detected overlaps moved some few-shot scores by 1–4 points; subsequent audits (Dodge et al., C4) found ~4–14% of some test sets present in common crawls. Scale of the problem in two numbers.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Dodge et al., C4 documentation — <a href="https://arxiv.org/abs/2104.08758" target="_blank" rel="noopener">arXiv:2104.08758</a></li>
+    <li>Brown et al., GPT-3 contamination appendix — <a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">arXiv:2005.14165</a></li>
+    <li>Srivastava et al., BIG-bench canaries — <a href="https://arxiv.org/abs/2206.04615" target="_blank" rel="noopener">arXiv:2206.04615</a></li>
+    <li>Golchin &amp; Surdeanu, <em>Time Travel in LLMs</em> — <a href="https://arxiv.org/abs/2310.17561" target="_blank" rel="noopener">arXiv:2310.17561</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Certifiably-clean evals (canary-embedded, private, rotated) vs the economics of public benchmarks — the infrastructure question of <a class="doc-concept" href="../../concepts/evaluation/playback.html"><code>evaluation</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

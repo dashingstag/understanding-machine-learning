@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reasoning and test-time compute · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="reasoning-models" data-page-id="reasoning-models" data-root="../../">
+  <header class="top">
+    <h1>Reasoning and test-time compute</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Chain-of-thought, RL-trained long reasoning traces, and spending FLOPs at inference instead of training.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="compute-c"></span> <span data-notation="reward-r"></span></p>
+    <h2>Statement</h2>
+    <p>Models trained to produce long internal <code>chain-of-thought</code> traces — thousands of tokens of scratchpad before answering — and rewarded via RL on <code>verifiable-rewards</code> (correct math, passing tests). The result is a second scaling axis: <code data-notation="compute-c">compute-c</code> spent at inference buys accuracy that parameter scale alone didn't reach. o1/R1-class systems are the existence proof.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — the 2025–26 capability frontier runs on inference-time compute, not just bigger <a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a>: "thinking" modes trade latency and token cost for accuracy on math, code and science — a new dial on <a class="doc-concept" href="../../concepts/scaling-laws/playback.html"><code>scaling-laws</code></a> and a new pricing axis in <a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a>.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>CoT as scratchpad.</strong> <code>chain-of-thought</code>: intermediate steps externalize working memory — attention alone can't store intermediate products.</li>
+    <li><strong>From prompting to training.</strong> Wei et al. prompted it; o1/R1 trained it — RL on verifiable outcomes discovers <em>which</em> trace habits pay (backtracking, verification, decomposition).</li>
+    <li><strong>Verifiability as the gate.</strong> <code>verifiable-rewards</code>: only domains with cheap checkers (math, code, formal proofs) admit dense RL signal — the enabling condition and the current boundary.</li>
+    <li><strong>Test-time scaling laws.</strong> Accuracy vs reasoning-tokens is law-like (log-linear over ranges) — "think longer" is a real, purchasable axis.</li>
+    <li><strong>Cost and control.</strong> Traces cost tokens+time, leak into pricing; hidden-CoT debates (faithfulness — does the trace show the real computation?) feed <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> and <a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a>.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>o1-style budget arithmetic (illustrative): GSM-style problem, direct answer ~60% for a strong base model; 500 reasoning tokens → ~85%; best- of-4 500-token traces → ~93%.</p>
+    <ul>
+    <li>The same weights, no new <a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a> — the delta is entirely spent <code data-notation="flop">flop</code>s at inference. The "reasoning scaling curve" is that accuracy- vs-tokens line.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Wei et al., CoT — <a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">arXiv:2201.11903</a></li>
+    <li>DeepSeek-AI, <em>R1</em> — <a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener">arXiv:2501.12948</a></li>
+    <li>Snell et al., <em>Scaling LLM Test-Time Compute</em> — <a href="https://arxiv.org/abs/2408.03314" target="_blank" rel="noopener">arXiv:2408.03314</a></li>
+    <li>Lightman et al., <em>Let's Verify Step by Step</em> — <a href="https://arxiv.org/abs/2305.20050" target="_blank" rel="noopener">arXiv:2305.20050</a></li>
+    <li>Shao et al., GRPO — <a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">arXiv:2402.03300</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Verifiability frontier: extending dense rewards to non-checkable domains (writing, strategy, science) — rubric judges, process RMs or self-consistency?</li>
+    <li>Faithfulness: does the visible trace reflect the real computation? — Turpin et al. showed it often doesn't; safety stakes in <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

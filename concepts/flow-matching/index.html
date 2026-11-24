@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flow matching · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="flow-matching" data-page-id="flow-matching" data-root="../../">
+  <header class="top">
+    <h1>Flow matching</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Learning the velocity field between noise and data — the current formulation behind SD3/Flux-style generators.</p>
+    <p class="doc-syms"><span data-notation="x-t"></span> <span data-notation="eps-noise"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>Learn the velocity field that transports noise to data: define a probability path $x_t$ from Gaussian to data (typically linear interpolation $x_t = (1-t)x_0 + t\epsilon$), train $v_\theta(x_t, t)$ to predict the path's velocity $dx/dt$, then integrate the ODE from $t{=}1$ to $t{=}0$. The modern reformulation of <a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> — straighter paths, fewer steps, simpler objectives.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> — flow matching + diffusion transformers is the 2024+ default recipe (Stable Diffusion 3, Flux, Sora-class video). It explains <em>why</em> denoising works as transport, samples in fewer steps, and unifies DDPM-style noise schedules as special cases of path design.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Paths, not schedules.</strong> Define any interpolant $x_t$ between noise and data; the model learns its velocity field — DDPM is a curved special case; linear ("rectified flow") is the simple one.</li>
+    <li><strong>Conditional flow matching.</strong> Train on per-pair paths: pick $(x_0, \epsilon)$, form $x_t$, regress $v_\theta(x_t,t)$ onto $x_0 - \epsilon$ — tractable despite the marginal field being intractable.</li>
+    <li><strong>Sampling = ODE solve.</strong> Euler/Heun/Runge–Kutta from $t{=}1$ — straighter paths need fewer solver steps (the rectified-flow result: reflow makes paths straighter).</li>
+    <li><strong>Why it won.</strong> Deterministic, interpretable as transport theory, better at high guidance, compatible with distillation to few-step students — the practical recipe everywhere new models ship.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Linear path $x_t = (1-t)x_0 + t\epsilon$:</p>
+    <ul>
+    <li>Target velocity is constant: $dx/dt = \epsilon - x_0$ — the model learns to point from noise straight at data.</li>
+    <li>Euler with 20 steps on a straightened path ≈ DDIM with 100+ on the curved one — the fewer-steps claim in one line.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Lipman et al. — <a href="https://arxiv.org/abs/2210.02747" target="_blank" rel="noopener">arXiv:2210.02747</a></li>
+    <li>Liu et al., rectified flow — <a href="https://arxiv.org/abs/2209.03003" target="_blank" rel="noopener">arXiv:2209.03003</a></li>
+    <li>Esser et al., SD3 (MM-DiT + flow) — <a href="https://arxiv.org/abs/2403.03206" target="_blank" rel="noopener">arXiv:2403.03206</a></li>
+    <li>Kingma &amp; Gao — <a href="https://arxiv.org/abs/2306.01809" target="_blank" rel="noopener">arXiv:2306.01809</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Text-native flow/diffusion (discrete or continuous tokens) vs autoregression — same question as <a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>' open thread.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

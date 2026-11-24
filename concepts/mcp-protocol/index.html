@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP (Model Context Protocol) · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="mcp-protocol" data-page-id="mcp-protocol" data-root="../../">
+  <header class="top">
+    <h1>MCP (Model Context Protocol)</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The open standard that gives tool-calling a common socket — one protocol between agents and tools across vendors.</p>
+    <p class="doc-syms"><span data-notation="logits-z"></span></p>
+    <h2>Statement</h2>
+    <p>An open JSON-RPC standard for connecting models/agents to tools and data: servers expose resources (readable data), tools (callable functions) and prompts; clients (the agent hosts) discover and invoke them through one uniform protocol. "USB-C for AI" — one socket instead of an N×M mess of bespoke integrations. Anthropic-open, donated to the Linux Foundation.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a> — interoperability is what makes tool ecosystems possible: without a standard, every agent/tool pair needs custom glue (N tools × M hosts). MCP made <code>tool-calling</code> a network, not a point-to-point project.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Roles.</strong> Host (the agent app) holds clients; each client connects to servers — a GitHub server, a filesystem server, a database server.</li>
+    <li><strong>Three primitives.</strong> Tools (model-invoked functions), resources (context data the host/user picks), prompts (reusable templates) — capability discovery is built in via <code>tools/list</code>.</li>
+    <li><strong>Transport.</strong> stdio for local servers, HTTP+SSE/streamable for remote — same messages either way.</li>
+    <li><strong>Security model.</strong> Explicit consent gates + scoped servers — and a real attack surface (malicious tool descriptions, confused-deputy problems) that's actively mapped in 2025+ advisories.</li>
+    <li><strong>Ecosystem effect.</strong> One implementation per tool serves every compliant host — the reason "support MCP" became a product checkbox.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>An agent with GitHub + filesystem MCP servers:</p>
+    <ul>
+    <li><code>tools/list</code> → sees <code>create_issue</code>, <code>read_file</code>… → model emits <code>call_tool("create_issue", {title, body})</code> → server executes → JSON result back into context — no custom API code in the agent at all.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>modelcontextprotocol.io — the specification</li>
+    <li>Anthropic MCP announcement (Nov 2024) + Linux Foundation donation (2025)</li>
+    <li>MCP security analyses: Invariant Labs tool-poisoning notes (2025)</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Capability auth/delegation at scale — fine-grained permissions for what an agent may do through a server is the unfinished spec frontier.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

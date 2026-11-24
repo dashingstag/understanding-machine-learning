@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scaling laws · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="scaling-laws" data-page-id="scaling-laws" data-root="../../">
+  <header class="top">
+    <h1>Scaling laws</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Loss vs model size at fixed compute</h3>
+    <svg id="anim" viewBox="0 0 300 190"></svg>
+    <label>N: <strong id="scrub-label">—</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The observation">
+      <h2>Straight lines on log–log paper</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="jared-kaplan">Jared Kaplan</span>'s 2020
+          OpenAI paper fit the same power law across 6 orders of
+          magnitude — the field's closest thing to a physical law
+          (<span data-theorem="kaplan-laws">the result</span>).</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Labs fit the exponents on cheap runs, then extrapolate to the
+          frontier run before spending it. Loss is predicted before the
+          model exists — usually to ~2%.</p>
+      </aside>
+      <p>Test <span data-notation="loss-l">loss</span> falls as a clean
+        power of each factor:
+        $L(N,D) = E + A/N^{\alpha} + B/D^{\beta}$. No theory predicted it;
+        nothing has broken it — yet.</p>
+    </section>
+
+    <section class="frame" data-title="Chinchilla">
+      <h2>Chinchilla: the compute-optimal split</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Before Chinchilla, "bigger is better" meant GPT-3 (175B) trained
+          on 300B tokens. Hoffmann et al. showed a 70B model on 1.4T
+          tokens beats it — Gopher's budget, one-third the size.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The rule — <span data-theorem="chinchilla">D ≈ 20N</span> —
+          reset every lab's sizing sheet and is why a 7B model is
+          trained on a trillion tokens. Inference costs then pushed labs
+          <em>past</em> optimal (smaller, over-trained models are cheaper
+          to serve — see <a data-concept-link="inference-efficiency">
+          inference</a>).</p>
+      </aside>
+      <p>At fixed <span data-notation="compute-c">compute</span>, loss is
+        U-shaped in <span data-notation="n-params">model size</span>: too
+        big wastes FLOPs on parameters, too small wastes them on data.
+        The panel shows the U and its minimum — the Chinchilla point.</p>
+    </section>
+
+    <section class="frame" data-title="What it buys, what it misses">
+      <h2>What the law buys — and misses</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Loss scales smoothly; <em>capabilities</em> needn't — Wei et
+          al.'s <span data-theorem="emergent-abilities">emergent
+          abilities</span> paper showed tasks jumping at thresholds,
+          though later work blames discontinuous metrics. Both claims are
+          in <a data-concept-link="evaluation">evaluation</a>'s remit.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The post-2024 frontier added a second curve: performance vs
+          <em>inference</em> FLOPs — <a data-concept-link="reasoning-models">reasoning
+          models</a> scale compute at test time instead of parameters.</p>
+      </aside>
+      <p>The law predicts loss, not skill — and it needs fresh
+        <a data-concept-link="training-data">data</a>: repeated epochs
+        decay quickly. It's a budgeting tool, not a capability oracle —
+        <a data-concept-link="goodhart-law">Goodhart</a>-proofing it is an
+        open practice.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: U-shaped loss vs N at fixed C; marks the Chinchilla minimum
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 30, PY = 160, PW = 250, PH = 125;
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    // at fixed C = 6ND: D = C/6N; L = E + A/N^a + B/D^b = E + A/N^a + B(6N/C)^b
+    const E = 1.7, A = 4e5, B = 1e-6, C = 1e22;
+    const L = n => E + A * Math.pow(n, -0.34) + B * Math.pow(6 * n / C, 0.28) * 1e3;
+    const nOf = x => Math.pow(10, 8 + x * 3); // 1e8..1e11 params
+    const pts = [];
+    for (let i = 0; i <= 100; i++) {
+      const n = nOf(i / 100);
+      pts.push([i / 100, n, L(n)]);
+    }
+    const lmin = Math.min(...pts.map(p => p[2]));
+    const lmax = Math.max(...pts.map(p => p[2]));
+    const toX = x => PX + x * PW;
+    const toY = v => PY - ((v - lmin) / (lmax - lmin)) * PH * 0.9 - 8;
+    const curve = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: pts.map(p => `${toX(p[0])},${toY(p[2])}`).join(" ") });
+    svg.appendChild(curve);
+    const best = pts.reduce((a, b) => a[2] < b[2] ? a : b);
+    svg.appendChild(el("circle", { cx: toX(best[0]), cy: toY(best[2]),
+      r: 5, fill: "#3fb950" }));
+    const bt = el("text", { x: toX(best[0]), y: toY(best[2]) - 10,
+      "text-anchor": "middle", "font-size": 9, fill: "#3fb950" });
+    bt.textContent = "Chinchilla-optimal"; svg.appendChild(bt);
+    const dot = el("circle", { r: 4.5, fill: "#f0883e" });
+    svg.appendChild(dot);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    const fmt = n => n >= 1e9 ? (n/1e9).toFixed(1)+"B" : (n/1e6).toFixed(0)+"M";
+    function paint(i) {
+      const [x, n, v] = pts[i];
+      dot.setAttribute("cx", toX(x)); dot.setAttribute("cy", toY(v));
+      lab.textContent = fmt(n);
+      info.textContent = `N = ${fmt(n)} → loss ${v.toFixed(2)} at fixed C: ${n < best[1] ? "under-sized (starved of params)" : n > best[1] ? "over-sized (starved of data)" : "the optimum"}.`;
+      scrub.value = i;
+    }
+    let i = 0, dir = 1, timer;
+    const tick = () => { i += dir; if (i >= 100 || i <= 0) dir = -dir; paint(i); };
+    const start = () => { timer = setInterval(tick, 60); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; dir = 1; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

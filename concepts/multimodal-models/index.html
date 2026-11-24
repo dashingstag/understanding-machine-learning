@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multimodal models · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="multimodal-models" data-page-id="multimodal-models" data-root="../../">
+  <header class="top">
+    <h1>Multimodal models</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">One model over text, image, audio and video — and vision-language-action models for robots.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="d-model"></span> <span data-notation="vocab"></span></p>
+    <h2>Statement</h2>
+    <p>One model over text, image, audio and video: each modality is turned into <code data-notation="embed-e">embed-e</code>-shaped input by <code>modality-tokenizers</code>, often aligned via <code>contrastive-learning</code>, then processed by the same <a class="doc-concept" href="../../concepts/transformer-architecture/playback.html"><code>transformer-architecture</code></a> stack — with decoders (<a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>, token decoders) on the output side. Vision-language-action models extend the same recipe to robot control.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — 2026-era products are natively multimodal: image understanding, voice, video and robotics all route through the same trunk. Understanding them needs the fusion story — how pixels become tokens — not just the text stack.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Tokenizing the world.</strong> <code>modality-tokenizers</code>: ViT patches, VQ codes, spectrogram slices — every modality becomes a sequence the trunk can attend to.</li>
+    <li><strong>Two fusion styles.</strong> Early fusion (native multimodal transformers — one stack eats mixed tokens) vs late fusion (CLIP-style encoders + an LLM via projector/adapter).</li>
+    <li><strong>Contrastive alignment.</strong> <code>contrastive-learning</code>: CLIP's dual encoder pulls matching image–text pairs together — the embedding space most open multimodal systems stand on.</li>
+    <li><strong>Generation vs understanding.</strong> Understanding reuses the LM head; generation needs modality decoders — diffusion for pixels (<a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>), codec decoders for audio.</li>
+    <li><strong>Embodiment.</strong> VLA models (RT-2, π0): same trunk, action tokens out — robotics is multimodality with motors attached.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>A "what's in this photo?" query, GPT-4V-class:</p>
+    <ul>
+    <li>Image → ViT patches (~14×14 px each) → patch embeddings + learned projector → same <code data-notation="d-model">d-model</code> stream as text tokens.</li>
+    <li>The prompt's text tokens and image patch tokens share one attention block — cross-modal reasoning is just attention over a mixed sequence.</li>
+    <li>The model never "sees pixels" — it sees ~576 token-shaped vectors.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Radford et al., CLIP — <a href="https://arxiv.org/abs/2103.00020" target="_blank" rel="noopener">arXiv:2103.00020</a></li>
+    <li>Liu et al., LLaVA — <a href="https://arxiv.org/abs/2304.08485" target="_blank" rel="noopener">arXiv:2304.08485</a></li>
+    <li>Dosovitskiy et al., ViT — <a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener">arXiv:2010.11929</a></li>
+    <li>Driess et al., PaLM-E — <a href="https://arxiv.org/abs/2303.03378" target="_blank" rel="noopener">arXiv:2303.03378</a></li>
+    <li>Brohan et al., RT-2 — <a href="https://arxiv.org/abs/2307.15818" target="_blank" rel="noopener">arXiv:2307.15818</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Truly native token-free multimodality (pixels in, pixels out, one network) vs bolted-on encoders/decoders — which wins at scale?</li>
+    <li>Do modalities share an internal "meaning" representation — the platonic-hypothesis question from <a class="doc-concept" href="../../concepts/embeddings/playback.html"><code>embeddings</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

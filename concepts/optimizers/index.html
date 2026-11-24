@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Optimizers (SGD, momentum, Adam) · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="optimizers" data-page-id="optimizers" data-root="../../">
+  <header class="top">
+    <h1>Optimizers (SGD, momentum, Adam)</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">What actually performs the update: momentum, adaptive learning rates, weight decay — and why Adam won.</p>
+    <p class="doc-syms"><span data-notation="learning-rate"></span> <span data-notation="weights-theta"></span> <span data-notation="loss-l"></span> <span data-notation="beta"></span></p>
+    <h2>Statement</h2>
+    <p>The update-rule family applied to <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a>'s output: SGD adds momentum (velocity $v \leftarrow \beta v + \nabla\mathcal{L}$, step by $v$); Adam (Kingma &amp; Ba 2014) tracks both gradient mean and variance ($m, v$) and steps by $\hat m/(\sqrt{\hat v}+\epsilon)$ — per-parameter adaptive rates. AdamW decouples weight decay; most frontier training is Adam-family at <code data-notation="learning-rate">learning-rate</code> $10^{-4}$ scale with warmup+cosine decay.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/ml-foundations/playback.html"><code>ml-foundations</code></a> — the descent rule is a choice with real consequences: Adam's per-parameter normalization is why transformers train stably at scale where SGD stalls, and its hyperparameters ($\beta_1, \beta_2$, <code data-notation="beta">beta</code> weight decay) fill every run sheet.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>SGD.</strong> Pure <a class="doc-concept" href="../../site/notation.html#gd-update"><code>gd-update</code></a> on minibatches — simple, generalizes well, but fragile: one global LR for 10¹¹ heterogeneous parameters.</li>
+    <li><strong>Momentum.</strong> Polyak/Nesterov velocity — smooths noise, accelerates through valleys, overshoots less; still one LR.</li>
+    <li><strong>AdaGrad → RMSProp.</strong> Per-parameter step sizes scaled by accumulated squared gradients — rare/large gradients get smaller steps.</li>
+    <li><strong>Adam.</strong> Momentum ($m$, β₁=0.9) + RMSProp ($v$, β₂=0.999) + bias correction — the 2015 default; memory cost: 2 extra tensors per parameter (a real line-item at 100B+, cf. <a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a>).</li>
+    <li><strong>AdamW.</strong> Weight decay pulled out of the gradient path — the actual standard; variants (Lion, Sophia, Muon) challenge the crown at frontier scale.</li>
+    <li><strong>Schedules.</strong> Linear warmup (first ~0.5% steps), then cosine/linear decay — <code data-notation="learning-rate">learning-rate</code> is the highest-leverage knob.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Parameter with gradients $[10, 0.1, 10, 0.1, \dots]$ (alternating scale):</p>
+    <ul>
+    <li>SGD, $\eta$: oscillates — 10s dominate the step.</li>
+    <li>Momentum: direction stabilizes, oscillation damped by β.</li>
+    <li>Adam: each step ≈ $\eta \cdot \text{sign-like}$ — the 10s and 0.1s get <em>equal</em> effective step size via $\sqrt{\hat v}$ normalization: the noisy parameter converges without a global LR compromise.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Kingma &amp; Ba, Adam — <a href="https://arxiv.org/abs/1412.6980" target="_blank" rel="noopener">arXiv:1412.6980</a></li>
+    <li>Loshchilov &amp; Hutter, AdamW — <a href="https://arxiv.org/abs/1711.05101" target="_blank" rel="noopener">arXiv:1711.05101</a></li>
+    <li>Polyak 1964; Nesterov 1983 — momentum</li>
+    <li>Ruder, <em>An overview of gradient descent optimization algorithms</em> — <a href="https://arxiv.org/abs/1609.04747" target="_blank" rel="noopener">arXiv:1609.04747</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Second-order methods (Shampoo, Muon) at frontier scale — can they beat AdamW's generality without its tuning tax?</li>
+    <li>Why does Adam outperform SGD on transformers specifically — curvature, sparsity, or noise structure? — still debated.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

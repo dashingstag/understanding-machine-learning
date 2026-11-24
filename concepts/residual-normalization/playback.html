@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Residuals and normalization · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="residual-normalization" data-page-id="residual-normalization" data-root="../../">
+  <header class="top">
+    <h1>Residuals and normalization</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Signal vs depth</h3>
+    <svg id="anim" viewBox="0 0 300 190"></svg>
+    <label>depth: <strong id="scrub-label">1</strong></label>
+    <input type="range" id="scrub" min="1" max="96" step="1" value="1">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The skip">
+      <h2>The skip connection</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>ResNet (He et al. 2015) fixed a 152-layer CNN with one line:
+          $x + f(x)$. The transformer borrowed it verbatim — depth stopped
+          being a cliff.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Without the skip path, <a data-concept-link="gradient-descent">gradient
+          descent</a> sees gradients multiplied by per-layer gain ~96 times
+          — vanish or explode, pick your poison. The panel plots it.</p>
+      </aside>
+      <p>Each sublayer becomes $x \mapsto x + f(\mathrm{Norm}(x))$: the
+        layer proposes an <em>edit</em>, never a rewrite. Gradients always
+        have an identity path home — that alone is most of why 100-layer
+        stacks train at all.</p>
+    </section>
+
+    <section class="frame" data-title="The stream">
+      <h2>The residual stream</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="olah">Chris Olah</span>'s Anthropic team
+          reframed the stream as a shared communication channel — every
+          attention head and FFN "publishes" into it. That framing made
+          <a data-concept-link="interpretability">mechanistic
+          interpretability</a> a field.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p><a data-concept-link="activation-steering">Activation
+          steering</a> exploits the stream's linearity: add a "refusal"
+          or "honesty" direction mid-forward-pass and the behaviour
+          changes — no retraining.</p>
+      </aside>
+      <p>Because every sublayer reads and writes the same vector, the
+        hidden state is a running draft — attention deposits gathered
+        context, the FFN deposits computed features. Reading the draft is
+        interpretability; editing it is control.</p>
+    </section>
+
+    <section class="frame" data-title="The norm">
+      <h2>LayerNorm and RMSNorm</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Pre-norm vs post-norm decided whether transformers could be
+          deep: post-norm (original paper) makes the early layers' warmup
+          brutal; pre-norm — norm inside the branch — became universal in
+          GPT/Llama-era stacks.</p>
+      </aside>
+      <p><span data-notation="layernorm-s">LayerNorm</span> re-centers each
+        position to mean 0, variance 1, then rescales by learned
+        $\gamma,\beta$ — see `layernorm` for the formula. RMSNorm skips
+        centering entirely; same stability, less compute — why Llama and
+        friends chose it.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: forward signal magnitude vs depth, with and without skip
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 30, PY = 150, PW = 260, PH = 120;
+    // frame
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    const gain = 1.06;
+    const toX = l => PX + (l / 96) * PW;
+    const toY = v => PY - Math.min(PH, Math.log10(Math.max(v, .01) / 0.4) * 60 + 40);
+    const noSkip = el("polyline", { fill: "none", stroke: "#f85149",
+      "stroke-width": 2, points: "" });
+    const skip = el("line", { x1: PX, x2: PX + PW, y1: toY(1), y2: toY(1),
+      stroke: "#3fb950", "stroke-dasharray": "5 4" });
+    const dot = el("circle", { r: 4, fill: "#f85149" });
+    svg.appendChild(noSkip); svg.appendChild(skip); svg.appendChild(dot);
+    const t1 = el("text", { x: PX + 6, y: toY(1) - 6, "font-size": 9,
+      fill: "#3fb950" }); t1.textContent = "with skip: stays ~1";
+    svg.appendChild(t1);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(d) {
+      const pts = [];
+      for (let l = 1; l <= d; l++) pts.push(`${toX(l)},${toY(Math.pow(gain, l))}`);
+      noSkip.setAttribute("points", pts.join(" "));
+      dot.setAttribute("cx", toX(d));
+      dot.setAttribute("cy", toY(Math.pow(gain, d)));
+      lab.textContent = d;
+      info.textContent = `gain 1.06/layer → signal ×${Math.pow(gain,d).toFixed(1)} by depth ${d}; gradients shrink the same way backward.`;
+      scrub.value = d;
+    }
+    let d = 1, timer;
+    const tick = () => { d = d >= 96 ? 1 : d + 1; paint(d); };
+    const start = () => { timer = setInterval(tick, 90); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); d = 1; paint(1); start(); });
+    paint(1); start();
+  </script>
+</body>
+</html>

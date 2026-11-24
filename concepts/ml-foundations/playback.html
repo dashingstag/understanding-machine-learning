@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ML foundations · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="ml-foundations" data-page-id="ml-foundations" data-root="../../">
+  <header class="top">
+    <h1>ML foundations</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>The training loop, forever</h3>
+    <svg id="anim" viewBox="0 0 300 150"></svg>
+    <label>stage: <strong id="scrub-label">1</strong></label>
+    <input type="range" id="scrub" min="0" max="4" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The substrate">
+      <h2>The substrate under everything</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="rosenblatt">Frank Rosenblatt</span> built the
+          perceptron in 1958 as literal hardware — weights were
+          motor-driven potentiometers wired by hand. Its single-layer
+          limits, attacked in 1969, helped trigger the first AI winter.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Every page on this map compiles to the same five moves on the
+          right — a $200M training run and a homework logistic regression
+          differ in scale, not in kind.</p>
+      </aside>
+      <p>Strip any modern ML system down and five ideas remain: a
+        <em>model</em> (a parameterized function), a <em>loss</em> (one
+        scalar saying how wrong it is), <em>data</em> (what it sees), a
+        <em>descent rule</em> (how it improves), and <em>generalization</em>
+        (the only honest test).</p>
+      <p>This page is the foundations' own overview — each pillar has its
+        own node: <a data-concept-link="gradient-descent">gradient
+        descent</a>, <a data-concept-link="backpropagation">backpropagation</a>
+        and <a data-concept-link="optimizers">optimizers</a>.</p>
+    </section>
+
+    <section class="frame" data-title="Function">
+      <h2>Pillar 1 — a model is a function</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The <span data-theorem="universal-approximation">universal
+          approximation theorem</span> says even a single hidden layer can
+          compute any continuous function — in principle. Depth is what
+          makes it practical, which is why everything here is <em>deep</em>.</p>
+      </aside>
+      <p>$f_\theta$: sequence of token ids in, distribution over the next
+        token out. All the learning lives in
+        <span data-notation="weights-theta">model parameters</span> $\theta$
+        — for a frontier model, a vector with $\sim 10^{11}$ components.</p>
+      <p>The function's <em>shape</em> is the architecture —
+        <a data-concept-link="transformer-architecture">Transformer
+        architecture</a> for language,
+        <a data-concept-link="diffusion-models">diffusion</a> denoisers for
+        images. The shape is chosen; the weights are learned.</p>
+    </section>
+
+    <section class="frame" data-title="Loss & descent">
+      <h2>Pillars 2–3 — loss and descent</h2>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>A frontier <a data-concept-link="pretraining">pretraining</a> run is this loop repeated $\sim 10^{8}$
+          times on $\sim 10^{13}$ tokens of
+          <a data-concept-link="training-data">training data</a> — the loop
+          is trivially cheap per step and civilization-scale in aggregate.</p>
+      </aside>
+      <p>The task becomes one number: <span data-notation="loss-l">the
+        loss</span> $\mathcal{L}(\theta)$, e.g. mean cross-entropy over
+        predicted tokens. Then the only update rule the field has ever
+        really used:</p>
+      <div data-formula="gd-update"></div>
+      <p>$\eta$ is the <span data-notation="learning-rate">learning
+        rate</span>. In practice the update is stochastic (small batches)
+        and adaptive — see <a data-concept-link="gradient-descent">gradient
+        descent</a> and <a data-concept-link="optimizers">optimizers</a>.</p>
+    </section>
+
+    <section class="frame" data-title="Backprop">
+      <h2>Pillar 4 — gradients are manufactured</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="rumelhart">David Rumelhart</span>'s 1986
+          <em>Nature</em> paper (with Hinton &amp; Williams) is the citation
+          behind every gradient on this map — though the chain-rule trick
+          was published in control theory a decade earlier.</p>
+      </aside>
+      <p>$\nabla_\theta \mathcal{L}$ has hundreds of billions of entries —
+        nobody computes it by hand.
+        <a data-concept-link="backpropagation">Backpropagation</a> runs the
+        chain rule backward through the computation graph: each layer hands
+        its gradient signal to the layer before it, at the cost of roughly
+        two forward passes.</p>
+      <p>It's why a model with a trillion parameters still gets a usable
+        gradient every step — the single most load-bearing algorithm in the
+        field.</p>
+    </section>
+
+    <section class="frame" data-title="Generalization">
+      <h2>Pillar 5 — the only score that counts</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Textbooks said models fail by overfitting — bigger models should
+          get worse. <span data-theorem="double-descent">Double descent</span>
+          showed error can fall, spike at perfect-fit, then fall again —
+          overturning the intuition on its own turf.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>'Memorized vs learned' is now a product question: regurgitating
+          <a data-concept-link="training-data">training data</a> verbatim is
+          both an eval failure and a legal one. See
+          <a data-concept-link="evaluation">evaluation</a> and
+          <a data-concept-link="benchmark-contamination">benchmark
+          contamination</a>.</p>
+      </aside>
+      <p>Fitting the data is easy — a hash table does that. The whole
+        enterprise only pays off if $f_\theta$ performs on inputs it never
+        saw. Held-out data, honest <a data-concept-link="evaluation">evaluation</a>
+        and the gap between train and test loss are how we find out.</p>
+      <p><a data-concept-link="embeddings">Embeddings</a> deserve a word too:
+        between raw input and the stack sit learned vectors — geometry is
+        the fifth language of the foundations, after probability, linear
+        algebra and optimization.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim panel: the five-stage training loop, highlighted stage cycles
+    const STAGES = [
+      ["data", "feed a batch of examples through"],
+      ["f_θ(x)", "the model scores them — forward pass"],
+      ["L(θ)", "one scalar: how wrong it was"],
+      ["∇L", "backprop computes every parameter's blame"],
+      ["θ − η∇L", "descend one step — repeat 10⁸ times"]
+    ];
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const BW = 52, BH = 30, GAP = 8, OX = 6, OY = 40;
+    const boxes = STAGES.map(([label], i) => {
+      const x = OX + i * (BW + GAP);
+      const r = el("rect", { x, y: OY, width: BW, height: BH, rx: 6,
+        fill: "#161b22", stroke: "#30363d" });
+      const t = el("text", { x: x + BW / 2, y: OY + BH / 2 + 4,
+        "text-anchor": "middle", "font-size": 9, fill: "#c9d1d9" });
+      t.textContent = label;
+      svg.appendChild(r); svg.appendChild(t);
+      if (i < STAGES.length - 1) {
+        const a = el("text", { x: x + BW + GAP / 2, y: OY + BH / 2 + 4,
+          "text-anchor": "middle", "font-size": 10, fill: "#58a6ff" });
+        a.textContent = "→"; svg.appendChild(a);
+      }
+      return { r, t };
+    });
+    const back = el("text", { x: OX + (5 * (BW + GAP) - GAP) / 2, y: OY + BH + 26,
+      "text-anchor": "middle", "font-size": 10, fill: "#58a6ff" });
+    back.textContent = "└─────────────── update feeds the next step ───────────────┘";
+    svg.appendChild(back);
+    const stepTxt = el("text", { x: OX, y: OY - 16, "font-size": 11, fill: "#9aa" });
+    svg.appendChild(stepTxt);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    let step = 0, cycle = 0;
+    function paint(i) {
+      boxes.forEach((b, j) => {
+        const on = j === i;
+        b.r.setAttribute("stroke", on ? "#58a6ff" : "#30363d");
+        b.r.setAttribute("fill", on ? "#1c3550" : "#161b22");
+        b.t.setAttribute("fill", on ? "#fff" : "#c9d1d9");
+      });
+      lab.textContent = `${i + 1}/5 — ${STAGES[i][0]}`;
+      info.textContent = `step ${cycle * 5 + i + 1}: ${STAGES[i][1]}.`;
+      stepTxt.textContent = `training step ${cycle * 5 + i + 1}`;
+      scrub.value = i;
+    }
+    let timer;
+    const tick = () => { step++; if (step === 5) { step = 0; cycle++; } paint(step); };
+    const start = () => { timer = setInterval(tick, 1500); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); step = 0; cycle = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mixture of experts · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="mixture-of-experts" data-page-id="mixture-of-experts" data-root="../../">
+  <header class="top">
+    <h1>Mixture of experts</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Router: tokens pick experts</h3>
+    <svg id="anim" viewBox="0 0 300 200"></svg>
+    <label>token: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="5" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The swap">
+      <h2>One FFN becomes a menu of them</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="shazeer">Noam Shazeer</span> published the
+          idea in 2017 — a 137B-parameter LSTM with 2 experts per token —
+          and it stayed a curiosity until Mixtral and DeepSeek made
+          sparse the default.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Mixtral-8×7B: 47B params, ~13B active → dense-13B price,
+          dense-40B quality. DeepSeek-V3: 671B total, 37B active. The
+          trick is why open models keep pace.</p>
+      </aside>
+      <p>Replace each <a data-concept-link="feedforward-layer">FFN</a>
+        with $E$ copies plus a router: every token visits only its
+        top-$k$ experts. Parameters multiply; per-token compute doesn't
+        — `moe-layer`.</p>
+      <div data-formula="moe-layer"></div>
+    </section>
+
+    <section class="frame" data-title="The router">
+      <h2>The router is the whole invention</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The router is a softmax over experts — a tiny linear layer —
+        but getting a <em>discrete</em> top-$k$ choice to be trainable is
+        the trick: the gate score becomes the expert's weight in the
+        sum, so gradients flow through it.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Load imbalance is the production problem: tokens collapse onto
+          a few experts → dropped tokens, wasted hardware. Auxiliary
+          losses (Switch) or bias adjustments (DeepSeek) fight it —
+          <a data-concept-link="expert-routing">details</a>.</p>
+      </aside>
+      <p>Each token gets a <span data-notation="gate-g">gate score</span>
+        vector; the top-$k$ winners mix. The panel shows different tokens
+        routing to different expert pairs — "the", "def", "∫" all take
+        different doors.</p>
+    </section>
+
+    <section class="frame" data-title="What it buys, costs">
+      <h2>What sparsity buys — and costs</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Experts do specialize — but not cleanly: "math expert" labels
+          mostly fail on inspection; specialization is more statistical
+          than semantic. An <a data-concept-link="interpretability">interpretability</a>
+          question, open.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Cheap FLOPs, expensive bytes: all $E$ experts must live in
+          memory even though each token uses $k$. MoE shifts the bill
+          from compute to memory+bandwidth — an
+          <a data-concept-link="inference-efficiency">inference</a> and
+          <a data-concept-link="tensor-parallelism">parallelism</a>
+          problem, not an accuracy one.</p>
+      </aside>
+      <p>Capacity grows ~$E\times$; active compute stays dense-scale.
+        The cost: full parameter residency, routing complexity, and a
+        capacity factor that can silently drop tokens.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: tokens routed to top-2 of 8 experts
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const TOKS = ["the", "def", "∫", "Paris", "img", "```"];
+    const ROUTE = [[0, 4], [1, 6], [2, 5], [3, 7], [4, 1], [6, 2]];
+    const GATES = [[.62,.31], [.55,.40], [.70,.22], [.48,.44], [.51,.39], [.66,.28]];
+    const E = 8, K = 2;
+    for (let i = 0; i < E; i++) {
+      svg.appendChild(el("rect", { x: 190, y: 12 + i * 23, width: 90,
+        height: 18, rx: 4, fill: "#161b22", stroke: "#30363d",
+        id: `ex${i}` }));
+      const t = el("text", { x: 235, y: 25 + i * 23, "text-anchor": "middle",
+        "font-size": 9.5, fill: "#9aa" });
+      t.textContent = `expert ${i}`; svg.appendChild(t);
+    }
+    const tokBox = el("rect", { x: 15, y: 80, width: 60, height: 26, rx: 6,
+      fill: "#1c3550", stroke: "#58a6ff" });
+    const tokTxt = el("text", { x: 45, y: 97, "text-anchor": "middle",
+      "font-size": 12, fill: "#c9d1d9" });
+    const router = el("rect", { x: 100, y: 80, width: 60, height: 26, rx: 6,
+      fill: "#161b22", stroke: "#f0883e" });
+    const rTxt = el("text", { x: 130, y: 97, "text-anchor": "middle",
+      "font-size": 10, fill: "#f0883e" });
+    rTxt.textContent = "router";
+    const link1 = el("line", { x1: 75, y1: 93, x2: 100, y2: 93,
+      stroke: "#58a6ff", "stroke-width": 2 });
+    const wires = [el("line", { x1: 160, y1: 93, stroke: "#f0883e",
+      "stroke-width": 2 }), el("line", { x1: 160, y1: 93,
+      stroke: "#f0883e", "stroke-width": 2, "stroke-dasharray": "4 3" })];
+    svg.appendChild(tokBox); svg.appendChild(tokTxt);
+    svg.appendChild(router); svg.appendChild(rTxt); svg.appendChild(link1);
+    wires.forEach(w => svg.appendChild(w));
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      wires.forEach(w => w.setAttribute("x2", 0));
+      for (let e = 0; e < E; e++) {
+        const r = svg.getElementById(`ex${e}`);
+        r.setAttribute("fill", ROUTE[i].includes(e) ? "#1c3550" : "#161b22");
+        r.setAttribute("stroke", ROUTE[i].includes(e) ? "#58a6ff" : "#30363d");
+      }
+      ROUTE[i].forEach((e, j) => {
+        wires[j].setAttribute("x2", 190);
+        wires[j].setAttribute("y2", 21 + e * 23);
+      });
+      tokTxt.textContent = TOKS[i];
+      lab.textContent = `"${TOKS[i]}"`;
+      info.textContent = `"${TOKS[i]}" → experts ${ROUTE[i].join(" + ")} with gates ${GATES[i].join(", ")} — 2/${E} experts fire; the rest cost zero FLOPs for this token.`;
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 6; paint(i); };
+    const start = () => { timer = setInterval(tick, 1600); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

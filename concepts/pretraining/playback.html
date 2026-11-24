@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pretraining · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="pretraining" data-page-id="pretraining" data-root="../../">
+  <header class="top">
+    <h1>Pretraining</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>Loss curve of a frontier run</h3>
+    <svg id="anim" viewBox="0 0 300 180"></svg>
+    <label>step (k): <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="100" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="One objective">
+      <h2>The whole recipe in one line</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="sutskever">Ilya Sutskever</span> bet a decade
+          on "predict the next token" before it looked like intelligence —
+          GPT-2's unsupervised multitask claim was the first proof the bet
+          paid.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>A frontier run is ~$10^{25}$ FLOPs, ~$10^{13}$ tokens, weeks of
+          calendar time, eight figures of compute spend — all for this
+          single loss term.</p>
+      </aside>
+      <p><a data-concept-link="next-token-prediction">Predict the next
+        token</a>, at every position, on
+        <a data-concept-link="training-data">the whole curated
+        internet</a>. `cross-entropy` measures the miss;
+        <a data-concept-link="gradient-descent">gradient descent</a>
+        walks it down. No labels, no tasks — the corpus supervises itself.</p>
+    </section>
+
+    <section class="frame" data-title="The scale">
+      <h2>What $6ND$ buys</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>The <span data-theorem="chinchilla">Chinchilla scaling law</span>
+          (Hoffmann et al.) showed most big models were under-trained, not
+          under-sized: the compute-optimal recipe is ~20 tokens per
+          parameter — the reason Llama-7B saw a trillion.</p>
+      </aside>
+      <div data-formula="flops-6nd"></div>
+      <p>Each parameter does ~6 FLOPs per token: 2 forward, 4 backward.
+          `compute-c` is therefore set by `n-params` × `data-d` — and
+          <a data-concept-link="scaling-laws">scaling laws</a> predict the
+          final <span data-notation="perplexity-s">perplexity</span> before
+          the run starts.</p>
+    </section>
+
+    <section class="frame" data-title="The data">
+      <h2>The corpus is the curriculum</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Models trained on deduplicated, filtered data beat ones trained
+          on raw scrapes at the same size — data quality is worth
+          parameters. "The Pile" (Gao et al.) made that curation public
+          and set the open-source standard.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The mixing ratio — how much code vs math vs web — is a guarded
+          lab secret and a live
+          <a data-concept-link="benchmark-contamination">contamination</a>
+          surface: test sets leaking into scrapes inflate scores
+          silently.</p>
+      </aside>
+      <p>Trillion-token corpora are built, not found: dedup, quality
+        classifiers, toxicity filters, per-domain weights, and
+        increasingly <em>synthetic</em> data written by earlier models —
+        <a data-concept-link="training-data">the curation node</a>.</p>
+    </section>
+
+    <section class="frame" data-title="The run">
+      <h2>Running it without dying</h2>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Loss spikes at 3 a.m. are routine: a batch of bad data, an
+          LR bump, a flaky interconnect — mitigation is checkpoints,
+          clipping, rollbacks, and a war room. This is what
+          <a data-concept-link="distributed-training">distributed
+          training</a> operationalizes.</p>
+      </aside>
+      <p>The panel's curve is stylized but honest: sharp early drop,
+        long power-law tail, a spike or two where something broke and got
+        rolled back. <a data-concept-link="optimizers">AdamW</a>, warmup +
+        cosine decay, gradient clipping — the boring machinery that makes
+        the headline model possible.</p>
+    </section>
+
+    <section class="frame" data-title="What emerges">
+      <h2>What actually gets learned</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Capabilities like 3-digit arithmetic appear near-abruptly with
+          scale (<span data-theorem="emergent-abilities">emergent
+          abilities</span>, Wei et al.) — though later work showed some
+          "emergence" is a metric artefact. Both claims live in
+          <a data-concept-link="evaluation">evaluation</a>.</p>
+      </aside>
+      <p>Order of appearance: byte statistics → grammar → facts →
+        multi-hop patterns → latent reasoning scaffolding. Everything
+        <a data-concept-link="post-training">post-training</a> does is
+        reshaping what already exists here — which is why base-model
+        quality gates the whole pipeline.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: stylized pretraining loss curve with a spike; scrub = step
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const PX = 20, PY = 155, PW = 270, PH = 130;
+    svg.appendChild(el("rect", { x: PX, y: PY - PH, width: PW, height: PH,
+      fill: "none", stroke: "#30363d" }));
+    const loss = t => 1.9 + 8.5 * Math.exp(-t * 0.12)
+      + (t > 60 && t < 64 ? 2.2 : 0)          // the spike
+      + 0.05 * Math.sin(t * 3);               // noise
+    const toX = t => PX + (t / 100) * PW;
+    const toY = L => PY - (L - 1.5) / 9 * PH;
+    const line = el("polyline", { fill: "none", stroke: "#58a6ff",
+      "stroke-width": 2, points: "" });
+    const dot = el("circle", { r: 4, fill: "#fff" });
+    svg.appendChild(line); svg.appendChild(dot);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(t) {
+      const pts = [];
+      for (let i = 0; i <= t; i++) pts.push(`${toX(i)},${toY(loss(i))}`);
+      line.setAttribute("points", pts.join(" "));
+      dot.setAttribute("cx", toX(t)); dot.setAttribute("cy", toY(loss(t)));
+      lab.textContent = t;
+      info.textContent = t > 59 && t < 66
+        ? "a loss spike — bad batch or instability; roll back to the last good checkpoint."
+        : `loss ≈ ${loss(t).toFixed(2)} — slow power-law grind; most capability lands in this tail.`;
+      scrub.value = t;
+    }
+    let t = 0, timer;
+    const tick = () => { t = (t + 1) % 101; paint(t); };
+    const start = () => { timer = setInterval(tick, 100); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); t = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

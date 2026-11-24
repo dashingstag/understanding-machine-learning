@@ -46,3 +46,11 @@ next-env.d.ts
 .eslintcache
 .turbo
 .swc
+
+# learning-journal machinery (build.py requires these entries)
+__pycache__/
+progress/
+
+# owner notes content stays local
+notes/*
+!notes/.gitkeep

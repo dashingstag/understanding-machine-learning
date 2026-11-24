@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformer architecture · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="transformer-architecture" data-page-id="transformer-architecture" data-root="../../">
+  <header class="top">
+    <h1>Transformer architecture</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">The attention-based backbone behind nearly every frontier language, vision and multimodal model.</p>
+    <p class="doc-syms"><span data-notation="d-model"></span> <span data-notation="weights-theta"></span> <span data-notation="n-params"></span> <span data-notation="layernorm-s"></span> <span data-notation="sigma-act"></span></p>
+    <h2>Statement</h2>
+    <p>A transformer maps a sequence of token ids to a distribution over the next token by stacking identical blocks: each block is multi-head <a class="doc-concept" href="../../concepts/attention-mechanism/playback.html"><code>attention-mechanism</code></a> followed by a position-wise <a class="doc-concept" href="../../concepts/feedforward-layer/playback.html"><code>feedforward-layer</code></a>, wrapped in <a class="doc-concept" href="../../concepts/residual-normalization/playback.html"><code>residual-normalization</code></a>. The whole stack is a single differentiable function $f_\theta$ — see <a class="doc-concept" href="../../site/notation.html#transformer-block"><code>transformer-block</code></a> for the block formula — trained by <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a> on <code>next-token-prediction</code>.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — the transformer's layers are the object that everything else in this map trains (<a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a>), aligns (<a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a>), serves (<a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a>), scales (<a class="doc-concept" href="../../concepts/scaling-laws/playback.html"><code>scaling-laws</code></a>) or inspects (<a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>). It displaced RNNs and convolutions because attention's constant-depth paths parallelize perfectly over accelerators — the architecture <em>is</em> the scaling story.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Tokens in.</strong> <a class="doc-concept" href="../../concepts/tokenization/playback.html"><code>tokenization</code></a> → <a class="doc-concept" href="../../concepts/embeddings/playback.html"><code>embeddings</code></a> lookup: ids become rows of a <code data-notation="vocab">vocab</code>-sized table plus <a class="doc-concept" href="../../concepts/positional-encoding/playback.html"><code>positional-encoding</code></a>.</li>
+    <li><strong>The residual stream.</strong> One <code data-notation="d-model">d-model</code>-wide highway every sublayer reads from and writes to — <a class="doc-concept" href="../../concepts/residual-normalization/playback.html"><code>residual-normalization</code></a> is what makes 96+ layers trainable.</li>
+    <li><strong>Attention.</strong> <a class="doc-concept" href="../../concepts/attention-mechanism/playback.html"><code>attention-mechanism</code></a> mixes information *across positions* — the only place tokens see each other. <a class="doc-concept" href="../../site/notation.html#attn"><code>attn</code></a> is $\mathcal O(n^2)$ in context length, which shapes everything downstream (<code>kv-cache</code>, sparse/linear attention research).</li>
+    <li><strong>FFN.</strong> <a class="doc-concept" href="../../concepts/feedforward-layer/playback.html"><code>feedforward-layer</code></a> — two matmuls with a <code data-notation="sigma-act">sigma-act</code> nonlinearity, ~⅔ of <code data-notation="n-params">n-params</code>, the likely home of factual recall.</li>
+    <li><strong>The head.</strong> <a class="doc-concept" href="../../concepts/unembedding/playback.html"><code>unembedding</code></a> scores the last hidden state against the vocabulary → <code data-notation="logits-z">logits-z</code> → <a class="doc-concept" href="../../site/notation.html#softmax"><code>softmax</code></a> → next-token distribution, sampled under <code data-notation="temperature">temperature</code>.</li>
+    <li><strong>Why this won.</strong> Parallel training (no recurrence), constant-length gradient paths, and hardware-shaped simplicity: it is three primitives (matmul, softmax, layernorm) repeated — ideal for <a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a>.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>GPT-2 small: <code data-notation="n-params">n-params</code> $= 124$M, <code data-notation="d-model">d-model</code> $d = 768$, $L = 12$ blocks, 12 heads $\Rightarrow$ <code data-notation="key-dim">key-dim</code> $d_k = 64$.</p>
+    <ul>
+    <li>Per block: attention $\approx 4d^2 = 2.36$M params; FFN $\approx 8d^2 = 4.72$M $\Rightarrow$ $\approx 7.1$M/block, $\times 12 \approx 85$M.</li>
+    <li>Embeddings: $50{,}257 \times 768 \approx 38.6$M (tied with the head) $\Rightarrow$ $\approx 124$M total. The parameter budget is ~⅓ vocabulary, ~⅔ blocks.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Vaswani et al., <em>Attention Is All You Need</em> — <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arXiv:1706.03762</a></li>
+    <li>Radford et al., <em>Language Models are Unsupervised Multitask Learners</em> (GPT-2 report, 2019)</li>
+    <li>Kaplan et al., <em>Scaling Laws for Neural Language Models</em> — <a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">arXiv:2001.08361</a></li>
+    <li>Brown et al., <em>GPT-3</em> — <a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">arXiv:2005.14165</a></li>
+    <li>Karpathy, nanoGPT — <a href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener">github.com/karpathy/nanoGPT</a></li>
+    <li>3Blue1Brown ch.5–7, <em>Transformers</em> series</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Is attention-load-bearing or just the easiest-to-scale mixer? — alternatives (state-space models, linear attention) test this; see <a class="doc-concept" href="../../concepts/inference-efficiency/playback.html"><code>inference-efficiency</code></a>.</li>
+    <li>Where exactly do capabilities live — heads, FFNs, or the stream? — belongs to <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

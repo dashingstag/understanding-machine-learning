@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Latent diffusion · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="latent-diffusion" data-page-id="latent-diffusion" data-root="../../">
+  <header class="top">
+    <h1>Latent diffusion</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Diffusing in a VAE latent space instead of pixels — the step that made high-resolution generation cheap.</p>
+    <p class="doc-syms"><span data-notation="x-t"></span> <span data-notation="eps-noise"></span></p>
+    <h2>Statement</h2>
+    <p>Run <a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a>' denoising in a learned compressed space instead of pixel space: a VAE encodes 512² RGB to a ~64×64 latent (perceptual compression ~8× per side), the noise-prediction network operates there, and the decoder renders once at the end. Rombach et al. 2022 — the compute trick that put image generation on consumer GPUs.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/diffusion-models/playback.html"><code>diffusion-models</code></a> — pixel-space DDPM needed 1000+ expensive steps on full-resolution tensors; the latent move is <em>the</em> reason Stable Diffusion is cheap and open. Video, audio and 3-D generators all reuse it.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The autoencoder.</strong> Encoder: pixels → smooth low-res latent; decoder: latent → pixels. Trained perceptually (LPIPS + adversarial) so the latent carries semantics, not noise.</li>
+    <li><strong>Diffusion in latent.</strong> <a class="doc-concept" href="../../site/notation.html#ddpm-loss"><code>ddpm-loss</code></a> unchanged — but each UNet/DiT pass is ~50× cheaper; sampling 20–50 steps is seconds.</li>
+    <li><strong>Why it preserves quality.</strong> Compression removes imperceptible high-frequency redundancy — the denoiser spends capacity on structure, not dithering.</li>
+    <li><strong>Conditioning.</strong> Cross-attention layers read text <code data-notation="embed-e">embed-e</code> (CLIP/T5) — how "a photo of X" steers the latent trajectory.</li>
+    <li><strong>Failure modes.</strong> Latent ceiling: fine text/faces degrade through the VAE; higher-ratio autoencoders trade fidelity for speed.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>512×512×3 = 786k values vs 64×64×4 = 16k latent values — a 48× reduction. One denoising step in latent ≈ 2% of the pixel-space cost — 50 steps ≈ 1 pixel step's worth of work, which is the entire consumer story.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Rombach et al., <em>High-Resolution Image Synthesis with Latent Diffusion</em> — <a href="https://arxiv.org/abs/2112.10752" target="_blank" rel="noopener">arXiv:2112.10752</a></li>
+    <li>Esser et al., VQGAN (the latent recipes' origin) — <a href="https://arxiv.org/abs/2012.09841" target="_blank" rel="noopener">arXiv:2012.09841</a></li>
+    <li>stability.ai — the SD model family releases</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>How far can compression go (128×? token-level latents) before the autoencoder becomes the bottleneck?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

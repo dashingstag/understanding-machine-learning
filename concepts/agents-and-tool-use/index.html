@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agents and tool use · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="agents-and-tool-use" data-page-id="agents-and-tool-use" data-root="../../">
+  <header class="top">
+    <h1>Agents and tool use</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Tool calling, MCP-style tool protocols, multi-step agent loops, computer use and coding agents.</p>
+    <p class="doc-syms"><span data-notation="logits-z"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>The model as a controller in a loop: perceive context → <code>agent-loop</code> plan → <code>tool-calling</code> act (function calls through schemas, increasingly via <code>mcp-protocol</code>) → observe results fed back as tokens → repeat until done. Coding agents, computer-use, deep-research systems are this loop productized; <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a> supply the planning, RAG supplies the memory.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — the 2026 product form of ML is the agent loop, not the single completion: it reuses nearly every concept on the map (reasoning traces as plans, tools as actions, retrieval as memory, evals as guardrails). "LLM" is now a component, not the system.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>The loop.</strong> <code>agent-loop</code>: perceive → plan → act → observe — a state machine where the state is the context window itself.</li>
+    <li><strong>Tools.</strong> <code>tool-calling</code>: JSON-schema'd functions — search, code exec, file IO, APIs; results re-enter the context as observations.</li>
+    <li><strong>Protocols.</strong> <code>mcp-protocol</code>: one socket standard between agents and tools — the interoperability layer of 2026 agent systems.</li>
+    <li><strong>Context management.</strong> The loop's memory is finite — compaction, scratchpads, RAG-in-loop decide what the agent "remembers".</li>
+    <li><strong>Failure modes.</strong> Loops without termination, tool hallucination, compounding errors over long horizons, prompt injection through tool results — the agent-era security surface.</li>
+    <li><strong>Training.</strong> Agents aren't just prompted: RL on task completion (SWE-bench-verified, browser tasks) — <code>verifiable-rewards</code> at the system level.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>A coding-agent turn (SWE-bench-class):</p>
+    <ul>
+    <li>Plan: decompose issue → read files (tool: <code>read_file</code>) → edit (tool: <code>write_file</code>) → test (tool: <code>run_tests</code>).</li>
+    <li>Each result re-enters context; the model re-plans; ~30–100 tool calls per resolved issue — a task "the model solved" is actually the loop solving with the model inside.</li>
+    <li>Pass@1 numbers in benchmarks are loop+model scores, not model scores.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Yao et al., ReAct — <a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">arXiv:2210.03629</a></li>
+    <li>Schick et al., Toolformer — <a href="https://arxiv.org/abs/2302.04761" target="_blank" rel="noopener">arXiv:2302.04761</a></li>
+    <li>Jimenez et al., SWE-bench — <a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">arXiv:2310.06770</a></li>
+    <li>Anthropic MCP spec — modelcontextprotocol.io</li>
+    <li>OpenAI function calling docs (2023+) — the schema pattern everyone inherited</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Long-horizon credit assignment — which tool call deserved the reward? — the RL question for agents.</li>
+    <li>Verification-vs-capability: agents on unverifiable tasks need the same checker infrastructure as <code>verifiable-rewards</code>.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

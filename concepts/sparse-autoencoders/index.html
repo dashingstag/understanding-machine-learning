@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sparse autoencoders · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="sparse-autoencoders" data-page-id="sparse-autoencoders" data-root="../../">
+  <header class="top">
+    <h1>Sparse autoencoders</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Dictionary learning over activations — the tool that turned neuron soup into named, steerable features.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="loss-l"></span> <span data-notation="sigma-act"></span></p>
+    <h2>Statement</h2>
+    <p>Dictionary learning over a model's activations: train an autoencoder with a bottleneck <em>wider</em> than the input and a sparsity penalty so that each hidden unit captures one feature — decomposing superposed <code data-notation="embed-e">embed-e</code>-space directions into nameable, steerable features. The workhorse that turned <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> from neuron-reading into feature-finding (Cunningham et al.; Templeton et al. "Scaling Monosemanticity").</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> — neurons are polysemantic (French + code + parens in one unit); SAEs disentangle the soup into a bigger sparse basis where features are single-purpose — the prerequisite for <code>activation-steering</code> and feature-level auditing.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Architecture.</strong> Encoder: activations → wide sparse layer ($\mathrm{ReLU}$ or TopK); decoder: features → reconstructed activations. Loss = reconstruction + sparsity penalty.</li>
+    <li><strong>Superposition fix.</strong> The model packs $F$ features into $d < F$ neurons; the SAE unpacks them back into ~$F$ dictionary atoms — each atom hopefully one concept.</li>
+    <li><strong>Naming.</strong> Features are labeled by inspection: max-activating examples + automated explanations — "Golden Gate Bridge feature" became the field's mascot via <code>activation-steering</code>.</li>
+    <li><strong>Scale.</strong> Anthropic's 2024 runs: millions of features across mid-stack layers of Claude — hierarchical: features split into finer sub-features as the dictionary grows.</li>
+    <li><strong>Open problems.</strong> Feature splitting/merging instability, dead latents, missing the <em>computational</em> role (a feature exists ≠ the model uses it), SAE-vs-transcoder debates for circuits.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Residual stream activation $\mathbf{h} \in \mathbb{R}^{768}$ at layer 12, SAE width $32k$, top-64 sparsity:</p>
+    <ul>
+    <li>Output: 64 active features — e.g., #412 "mentions of dates", #8817 "sycophantic agreement phrasing" — each a direction you can read or add back as an edit.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Cunningham et al., SAEs for LMs — <a href="https://arxiv.org/abs/2309.08600" target="_blank" rel="noopener">arXiv:2309.08600</a></li>
+    <li>Templeton et al., Scaling Monosemanticity — transformer-circuits.pub/2024/scaling-monosemanticity</li>
+    <li>Gao et al., TopK SAEs — <a href="https://arxiv.org/abs/2406.04093" target="_blank" rel="noopener">arXiv:2406.04093</a></li>
+    <li>Bricken et al., <em>Towards Monosemanticity</em> — transformer-circuits.pub/2023/monosemantic-features</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Do SAE features capture mechanisms (causal roles) or just clusters? Transcoders and circuit-level evaluation are the proposed tests.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

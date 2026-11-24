@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distributed training · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="distributed-training" data-page-id="distributed-training" data-root="../../">
+  <header class="top">
+    <h1>Distributed training</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Data, tensor and pipeline parallelism, MFU and interconnects — how trillion-parameter runs actually execute.</p>
+    <p class="doc-syms"><span data-notation="compute-c"></span> <span data-notation="flop"></span> <span data-notation="weights-theta"></span> <span data-notation="n-params"></span></p>
+    <h2>Statement</h2>
+    <p>Executing a <a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a> run across thousands of accelerators by splitting work along three axes: <code>data-parallelism</code> (replicate model, shard batch), <code>tensor-parallelism</code> (shard each matrix), and <code>pipeline-parallelism</code> (shard layers) — composed with optimizer-state sharding (ZeRO/FSDP). Success is measured in MFU: model FLOP utilization, typically 35–55%.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — every headline "trained on $10^{25}$ FLOPs" claim presumes this machinery: the model is too big for one GPU's memory and the corpus too big for one GPU's lifetime. Parallelism strategy sets both feasibility and the real <code data-notation="compute-c">compute-c</code> price tag.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Memory math first.</strong> Adam needs ~16 bytes/param (fp32 master + momentum + variance + fp16 weight) — a 70B model is &gt;1TB of optimizer state before activations. No single GPU holds it.</li>
+    <li><strong><code>data-parallelism</code>.</strong> The default: each GPU gets a batch slice, gradients all-reduced every step; ZeRO-1/2/3 and FSDP shard optimizer state → gradients → weights across the same replicas.</li>
+    <li><strong><code>tensor-parallelism</code>.</strong> Split each weight matrix's columns/rows across GPUs in a node — needed when one layer won't fit; costs an all-reduce per block, so it stays inside the NVLink domain.</li>
+    <li><strong><code>pipeline-parallelism</code>.</strong> Layers 1–24 on GPU group A, 25–48 on B — micro-batched assembly line; scheduling (GPipe, 1F1B, interleaved) fights the "bubble" of idle stages.</li>
+    <li><strong>The network is the architecture.</strong> All-reduce every step over InfiniBand/NVLink — interconnect bandwidth, not FLOPs, often sets the achievable MFU and the 3-D parallelism composition.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>70B model, 8×H100 node (80GB each):</p>
+    <ul>
+    <li>Weights fp16: 140GB — doesn't fit on one GPU; Adam state: ~1.1TB.</li>
+    <li>FSDP/ZeRO-3 across 64 GPUs: ~17GB optimizer state + 2.2GB weights sharded per GPU + activations — fits, at the price of an all-gather per layer and an all-reduce per step.</li>
+    <li>MFU ≈ 40% → a 1.4T-token run at ~$6 \cdot 7\times10^{10} \cdot 1.4\times10^{12} \approx 6\times10^{23}$ FLOPs needs ~2 weeks on 4,096 GPUs — the real budget behind a "70B open model".</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Rajbhandari et al., <em>ZeRO</em> — <a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">arXiv:1910.02054</a></li>
+    <li>Shoeybi et al., <em>Megatron-LM</em> (tensor parallelism) — <a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">arXiv:1909.08053</a></li>
+    <li>Huang et al., <em>GPipe</em> — <a href="https://arxiv.org/abs/1811.06965" target="_blank" rel="noopener">arXiv:1811.06965</a></li>
+    <li>Narayanan et al., <em>Efficient Large-Scale LM Training on GPU Clusters</em> — <a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">arXiv:2104.04473</a></li>
+    <li>PyTorch FSDP docs — pytorch.org</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Post-10⁴-GPU scaling: fault-tolerant elastic training and cross-datacenter federated runs (async low-bandwidth) — active engineering frontier.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

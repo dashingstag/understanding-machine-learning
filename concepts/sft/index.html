@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supervised fine-tuning (SFT) · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="sft" data-page-id="sft" data-root="../../">
+  <header class="top">
+    <h1>Supervised fine-tuning (SFT)</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Stage one of every pipeline — imitation learning on curated demonstrations before any preference step.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="weights-theta"></span></p>
+    <h2>Statement</h2>
+    <p>Stage one of <a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a>: continue <code>next-token-prediction</code> training on a small curated set of (instruction, ideal-response) demonstrations — typically 10³–10⁵ examples. Same <a class="doc-concept" href="../../site/notation.html#cross-entropy"><code>cross-entropy</code></a> machinery, new distribution: the model learns chat format, tone, and the assistant/refusal boundary.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/post-training/playback.html"><code>post-training</code></a> — preference stages (RLHF/DPO) shape <em>which</em> good response is produced; SFT installs the response format itself. It's also the cheapest capability lever known: LIMA showed ~1,000 top-quality examples can surface competence a base model already had.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Format over facts.</strong> SFT mainly teaches <em>how to respond</em> — style, structure, role tokens — not new knowledge; hallucinations often trace to it teaching the model to <em>answer</em> rather than say "I don't know" (Gekhman et al. 2024).</li>
+    <li><strong>Data.</strong> Human demonstrations (InstructGPT: contractor-written) or distilled teacher outputs (Alpaca-style self-instruct); quality ≫ quantity.</li>
+    <li><strong>Chat markup.</strong> Special tokens (<code>&lt;|im_start|&gt;</code>, roles) are trained here — the control channel <code>tool-calling</code> and <a class="doc-concept" href="../../concepts/agents-and-tool-use/playback.html"><code>agents-and-tool-use</code></a> reuse.</li>
+    <li><strong>Continual-learning tension.</strong> Fine-tuning drifts from base capabilities; mitigations: low LR, few epochs, KL-anchored losses — the "alignment tax" debate.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>LIMA (Zhou et al. 2023): 65B model + 1,000 curated examples beat crowd-favourite Alpaca (52k distilled examples) on helpfulness — the canonical "less is more" datapoint for SFT quality.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Ouyang et al., InstructGPT — <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arXiv:2203.02155</a></li>
+    <li>Zhou et al., <em>LIMA: Less Is More for Alignment</em> — <a href="https://arxiv.org/abs/2305.11206" target="_blank" rel="noopener">arXiv:2305.11206</a></li>
+    <li>Taori et al., <em>Alpaca</em> (self-instruct distillation) — Stanford CRFM 2023</li>
+    <li>Gekhman et al., *Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?* — <a href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener">arXiv:2405.05904</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Can SFT teach "I don't know" without suppressing real answers? — calibration-through-demonstration is unresolved.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

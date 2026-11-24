@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Positional encoding · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="positional-encoding" data-page-id="positional-encoding" data-root="../../">
+  <header class="top">
+    <h1>Positional encoding</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>RoPE: rotate by position</h3>
+    <svg id="anim" viewBox="0 0 300 200"></svg>
+    <label>position m = <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="40" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="The blind spot">
+      <h2>Attention is order-blind</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Shuffle an attention layer's inputs and the outputs shuffle
+          identically — a permutation-equivariant machine. "Dog bites man"
+          and "man bites dog" are the same bag until order is injected.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Early BERT/GPT-2 used learned absolute positions — a hard cap
+          on context length. Everything modern uses
+          <em>relative</em> schemes: RoPE in Llama/Qwen/DeepSeek, ALiBi in
+          MPT.</p>
+      </aside>
+      <p>Self-attention computes pairwise scores —
+        <a data-concept-link="attention-mechanism">see the mechanism</a> —
+        and pairs carry no order. Position must be smuggled in as data:
+        added to the <a data-concept-link="embeddings">embeddings</a>, or
+        baked into the Q/K geometry.</p>
+    </section>
+
+    <section class="frame" data-title="RoPE">
+      <h2>RoPE — position as rotation</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>RoPE is parameterless — a fixed rotation schedule. It survives
+          because it encodes what attention actually wants: <em>distance</em>,
+          not address. Two tokens 5 apart always get the same relative
+          angle, wherever they sit.</p>
+      </aside>
+      <p>Pair up each <span data-notation="query-matrix">query</span>'s
+        coordinates; rotate pair $i$ by angle $m\theta_i$ where $m$ is
+        position. The score $\mathbf{q}_m^\top\mathbf{k}_n$ then depends
+        only on $m-n$ — attention becomes a function of offset. The panel
+        shows one 2-D pair rotating as position grows.</p>
+    </section>
+
+    <section class="frame" data-title="Long context">
+      <h2>Why this sets the context limit</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-theorem="lost-in-middle">Lost-in-the-middle</span>
+          showed models over-attend to the edges of long contexts — a
+          positional pathology, not a knowledge one. Fix the encoding
+          (NTK/YaRN rescaling) and context windows stretch 4k → 1M.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>'1M-token context' marketing is largely a positional-encoding
+          story: rescale RoPE frequencies so unseen positions land on
+          seen phases — then fine-tune briefly. See
+          <a data-concept-link="inference-efficiency">inference
+          efficiency</a> for the memory cost that remains.</p>
+      </aside>
+      <p>Training at 4k bakes in a phase range; at position 4,001 the
+        rotations hit untrained angles and attention scrambles. Frequency
+        interpolation and NTK-aware scaling remap long positions onto
+        trained phases — cheap, post-hoc, and now standard.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: q rotated by m*theta — the RoPE idea in one 2-D slice
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const CX = 150, CY = 100, R = 70, TH = 0.35;
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: R, fill: "none",
+      stroke: "#30363d" }));
+    const k = [R, 0]; // fixed key at angle 0
+    const kLine = el("line", { x1: CX, y1: CY, x2: CX + k[0], y2: CY - k[1],
+      stroke: "#8b949e", "stroke-width": 2 });
+    const kTxt = el("text", { x: CX + k[0] - 14, y: CY - k[1] - 8,
+      "font-size": 11, fill: "#8b949e" });
+    kTxt.textContent = "k (n=0)";
+    const qLine = el("line", { x1: CX, y1: CY, x2: CX + R, y2: CY,
+      stroke: "#58a6ff", "stroke-width": 2.5 });
+    const qDot = el("circle", { r: 4, fill: "#58a6ff" });
+    const qTxt = el("text", { "font-size": 11, fill: "#58a6ff" });
+    svg.appendChild(kLine); svg.appendChild(kTxt);
+    svg.appendChild(qLine); svg.appendChild(qDot); svg.appendChild(qTxt);
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(m) {
+      const a = m * TH;
+      const x = CX + R * Math.cos(a), y = CY - R * Math.sin(a);
+      qLine.setAttribute("x2", x); qLine.setAttribute("y2", y);
+      qDot.setAttribute("cx", x); qDot.setAttribute("cy", y);
+      qTxt.setAttribute("x", x + 8); qTxt.setAttribute("y", y - 6);
+      qTxt.textContent = `q (m=${m})`;
+      lab.textContent = m;
+      info.textContent = `q rotated ${(a % (2*Math.PI)).toFixed(2)} rad — the q·k score now encodes the offset m−n, not the absolute position.`;
+      scrub.value = m;
+    }
+    let m = 0, dir = 1, timer;
+    const tick = () => { m += dir; if (m >= 40 || m <= 0) dir = -dir; paint(m); };
+    const start = () => { timer = setInterval(tick, 120); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); m = 0; dir = 1; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

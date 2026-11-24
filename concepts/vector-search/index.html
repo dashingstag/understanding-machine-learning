@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector search · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="vector-search" data-page-id="vector-search" data-root="../../">
+  <header class="top">
+    <h1>Vector search</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Approximate nearest-neighbour indexes (HNSW, IVF) — sub-second retrieval over millions of embedded chunks.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="cosine-s"></span></p>
+    <h2>Statement</h2>
+    <p>Approximate nearest-neighbour search over <code data-notation="embed-e">embed-e</code> vectors: index structures (HNSW graphs, IVF cells, PQ quantization) that return top-$k$ by <code data-notation="cosine-s">cosine-s</code>/dot-product in milliseconds over millions of vectors — trading exactness for speed. The "R" engine inside <a class="doc-concept" href="../../concepts/retrieval-augmented-generation/playback.html"><code>retrieval-augmented-generation</code></a>.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/retrieval-augmented-generation/playback.html"><code>retrieval-augmented-generation</code></a> — retrieval quality bounds everything: if the index misses the right chunk, the model never sees it. ANN engineering (graph navigability, compression, hybrid lexical+dense) is the difference between a demo and a product.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Exact k-NN doesn't scale.</strong> Brute force is $O(Nd)$ per query — fine at 10⁵ vectors, dead at 10⁸. ANN trades ~99% recall for 100× speed.</li>
+    <li><strong>HNSW.</strong> Navigable small-world graph: greedy walk from entry point down hierarchical layers — the production default (ms per query, high recall).</li>
+    <li><strong>IVF + PQ.</strong> Partition space into cells (probe a few), compress vectors to product-quantized codes — memory-efficient, slightly weaker recall; FAISS/ScaNN internals.</li>
+    <li><strong>Hybrid retrieval.</strong> Dense misses exact terms; BM25 misses paraphrases — production RAG fuses both (RRF) then reranks with a cross-encoder.</li>
+    <li><strong>Rerankers.</strong> Cheap bi-encoder retrieves top-100, expensive cross-encoder rescores — the standard two-stage pattern.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>10M chunks @ 768-dim fp16: brute force = 7.7 TB·op per query.</p>
+    <ul>
+    <li>HNSW (M=16, ef=200): ~30k distance evals → ~99% recall, ~5ms.</li>
+    <li>PQ(96 subquantizers): vectors shrink 768 floats → 96 bytes; index fits in RAM — recall drops ~2 points unless reranked.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Malkov &amp; Yashunin, HNSW — <a href="https://arxiv.org/abs/1603.09320" target="_blank" rel="noopener">arXiv:1603.09320</a></li>
+    <li>Jégou et al., Product Quantization — IEEE TPAMI 2011</li>
+    <li>Johnson et al., FAISS — <a href="https://arxiv.org/abs/1702.08734" target="_blank" rel="noopener">arXiv:1702.08734</a></li>
+    <li>Guo et al., ScaNN — <a href="https://arxiv.org/abs/1908.10396" target="_blank" rel="noopener">arXiv:1908.10396</a></li>
+    <li>Robertson &amp; Zaragoza, BM25 (2009) — the lexical half</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Learned indexes vs graph/quantized structures at 10⁹ scale — does a model beat a graph at reading geometry?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

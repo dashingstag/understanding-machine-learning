@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evaluation · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="evaluation" data-page-id="evaluation" data-root="../../">
+  <header class="top">
+    <h1>Evaluation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Benchmarks, LLM-as-judge, contamination, saturation and eval-driven development.</p>
+    <p class="doc-syms"><span data-notation="loss-l"></span> <span data-notation="perplexity-s"></span></p>
+    <h2>Statement</h2>
+    <p>The science of measuring what models can do: curated benchmarks (MMLU, GSM, SWE-bench), human preference arenas (Chatbot Arena), <code>llm-as-judge</code> graders, and <code data-notation="perplexity-s">perplexity-s</code> on held-out data — undermined by <code>benchmark-contamination</code> (test data in pretraining corpora), saturation, and <code>goodhart-law</code> pressure on every metric that becomes a target.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — every claim in this map ("reasoning works", "MoE wins", "R1 beats o1") stands or falls on evals. Eval methodology is where the field is weakest: contaminated benchmarks, judge bias, and saturation mean headline numbers are often the noisiest signal in the whole system.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Intrinsic vs extrinsic.</strong> <code data-notation="perplexity-s">perplexity-s</code> on held-out text vs task accuracy — perplexity predicts pretraining progress; tasks claim capability. They correlate loosely.</li>
+    <li><strong>Static benchmarks.</strong> MMLU (knowledge), GSM8K/MATH (reasoning), HumanEval/SWE-bench (code), ARC/HellaSwag — the canonical suite, all aging and saturating.</li>
+    <li><strong>Human evaluation.</strong> Arena-style pairwise battles → Elo — the gold standard for "feels better", slow and taste-laden.</li>
+    <li><strong>LLM-as-judge.</strong> <code>llm-as-judge</code>: a model grades the model — scalable, but biased (verbosity, position, self-preference).</li>
+    <li><strong>The contamination problem.</strong> <code>benchmark-contamination</code>: test sets scraped into <code>training-data</code> — scores measure memorization, not capability.</li>
+    <li><strong>Saturation + Goodhart.</strong> Benchmarks saturate in ~2 years now — and once a metric is marketed, it gets optimized (<code>goodhart-law</code>); the response is private/live evals and contamination audits.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>MMLU history as an eval obituary: introduced 2020 with GPT-3 at ~44%; frontier models hit ~90% by 2024 → MMLU-Pro and GPQA minted to restore headroom. The cycle — benchmark → saturation → scandal over contamination → harder successor — is now ~2 years per generation.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Hendrycks et al., MMLU — <a href="https://arxiv.org/abs/2009.03300" target="_blank" rel="noopener">arXiv:2009.03300</a></li>
+    <li>Zheng et al., Chatbot Arena/MT-Bench — <a href="https://arxiv.org/abs/2306.05685" target="_blank" rel="noopener">arXiv:2306.05685</a></li>
+    <li>Jimenez et al., SWE-bench — <a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">arXiv:2310.06770</a></li>
+    <li>Rein et al., GPQA — <a href="https://arxiv.org/abs/2311.12022" target="_blank" rel="noopener">arXiv:2311.12022</a></li>
+    <li>Srivastava et al., BIG-bench — <a href="https://arxiv.org/abs/2206.04615" target="_blank" rel="noopener">arXiv:2206.04615</a></li>
+    <li>Dodge et al., *Documenting the English Colossal Clean Crawled Corpus* (contamination methodology) — <a href="https://arxiv.org/abs/2104.08758" target="_blank" rel="noopener">arXiv:2104.08758</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Evals that measure what matters (robustness, honesty, real-world value) vs what's easy to score — the field's unresolved central question.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

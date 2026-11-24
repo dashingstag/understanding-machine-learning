@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrieval-augmented generation · playback</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="retrieval-augmented-generation" data-page-id="retrieval-augmented-generation" data-root="../../">
+  <header class="top">
+    <h1>Retrieval-augmented generation</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.html">Article</a><a href="index.md">Notes</a></nav>
+  </header>
+
+  <aside class="anim-panel">
+    <h3>The RAG pipeline</h3>
+    <svg id="anim" viewBox="0 0 300 200"></svg>
+    <label>stage: <strong id="scrub-label">0</strong></label>
+    <input type="range" id="scrub" min="0" max="4" step="1" value="0">
+    <p class="muted" id="anim-info"></p>
+    <button id="replay">Replay</button>
+  </aside>
+
+  <main class="playback">
+    <section class="frame" data-title="Why RAG">
+      <h2>Weights vs shelves</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-person="patrick-lewis">Patrick Lewis</span>'s 2020
+          paper coined the term — the insight was that a parametric
+          model's memory is a blurry photocopy; giving it a shelf of
+          documents made knowledge-intensive QA suddenly work.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Enterprise "chat with your data" is 90% this pipeline — plus a
+          system prompt and a citation template. Your docs were never in
+          the weights; the index is the product.</p>
+      </aside>
+      <p>A model's knowledge is frozen at training and private data was
+        never there. RAG answers both: retrieve the real document at
+        question-time, let the model read it like you would.</p>
+    </section>
+
+    <section class="frame" data-title="Index">
+      <h2>Index: chunk, embed, store</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><a data-concept-link="document-chunking">Chunking</a> is the
+          unglamorous step that decides everything: split a table
+          mid-row and the answer becomes unreachable — no downstream
+          step can recover what was never a whole unit.</p>
+      </aside>
+      <p>Corpus → <a data-concept-link="document-chunking">chunks</a>
+        (~300–500 tokens, overlap) → each gets an
+        <a data-concept-link="embeddings">embedding</a> → ANN index
+        (<a data-concept-link="vector-search">vector search</a>:
+        HNSW/IVF). Offline, once — this is the "shelf".</p>
+    </section>
+
+    <section class="frame" data-title="Retrieve">
+      <h2>Retrieve: what the model gets to see</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p><span data-theorem="lost-in-middle">Lost-in-the-middle</span>
+          means where a chunk lands in the context matters: models use
+          the edges best — so reranking puts the winner first, not
+          buried at #7.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>Retrieval misses — the right chunk never fetched — are the
+          dominant RAG failure in production. Hybrid BM25+vector and a
+          reranker are the standard band-aid.</p>
+      </aside>
+      <p>Query → same embedder → top-$k$ by
+        <span data-notation="cosine-s">cosine</span> → rerank → stuff
+        into the prompt. The retrieved set bounds every claim the model
+        can possibly make — the context *is* the knowledge.</p>
+    </section>
+
+    <section class="frame" data-title="Cite or it didn't happen">
+      <h2>Cite, or it didn't happen</h2>
+      <aside class="aside">
+        <h4>Did you know?</h4>
+        <p>Grounded hallucination becomes <em>checkable</em>: the answer
+          names its source chunks, so a wrong answer means either bad
+          retrieval or a model that ignored its own evidence — two
+          different bugs with different owners.</p>
+      </aside>
+      <aside class="aside real">
+        <h4>In the real world</h4>
+        <p>The failure taxonomy in production: retrieval miss &gt;
+          context dilution &gt; model error &gt; index staleness — in
+          that order. The model is usually the *least* guilty part.</p>
+      </aside>
+      <p>The generation step is ordinary
+        <a data-concept-link="next-token-prediction">LM decoding</a>
+        — the magic is entirely upstream, in what the context contains.
+        <a data-concept-link="agents-and-tool-use">Agentic</a> variants
+        let the model decide when and what to fetch — the pipeline
+        dissolving into a tool call.</p>
+    </section>
+  </main>
+
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/playback.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>
+    // anim: 5-stage RAG pipeline; scrub highlights
+    const svg = document.getElementById("anim");
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (t, a) => { const e = document.createElementNS(NS, t);
+      for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const ST = [
+      ["chunk + embed", "corpus → vector index (offline)"],
+      ["query → vector", "same embedder on the question"],
+      ["top-k retrieve", "nearest neighbours by cosine"],
+      ["rerank + stuff", "best chunks first, into the prompt"],
+      ["generate + cite", "model answers with sources"]
+    ];
+    const Y = 14, H = 26, G = 8;
+    const rows = ST.map(([s], i) => {
+      const y = Y + i * (H + G);
+      const r = el("rect", { x: 40, y, width: 210, height: H, rx: 6,
+        fill: "#161b22", stroke: "#30363d" });
+      const t = el("text", { x: 145, y: y + 17, "text-anchor": "middle",
+        "font-size": 10, fill: "#c9d1d9" });
+      t.textContent = s; svg.appendChild(r); svg.appendChild(t);
+      if (i) { const a = el("text", { x: 145, y: y - 1,
+        "text-anchor": "middle", "font-size": 9, fill: "#58a6ff" });
+        a.textContent = "↓"; svg.appendChild(a); }
+      return r;
+    });
+    const lab = document.getElementById("scrub-label");
+    const info = document.getElementById("anim-info");
+    const scrub = document.getElementById("scrub");
+    function paint(i) {
+      rows.forEach((r, j) => {
+        const on = j === i;
+        r.setAttribute("stroke", on ? "#58a6ff" : "#30363d");
+        r.setAttribute("fill", on ? "#1c3550" : "#161b22");
+      });
+      lab.textContent = ST[i][0];
+      info.textContent = ST[i][1];
+      scrub.value = i;
+    }
+    let i = 0, timer;
+    const tick = () => { i = (i + 1) % 5; paint(i); };
+    const start = () => { timer = setInterval(tick, 1700); };
+    const stop = () => { clearInterval(timer); timer = null; };
+    scrub.addEventListener("input", () => { stop(); paint(+scrub.value); });
+    document.getElementById("replay").addEventListener("click",
+      () => { stop(); i = 0; paint(0); start(); });
+    paint(0); start();
+  </script>
+</body>
+</html>

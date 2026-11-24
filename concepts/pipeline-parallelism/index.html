@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline parallelism · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="pipeline-parallelism" data-page-id="pipeline-parallelism" data-root="../../">
+  <header class="top">
+    <h1>Pipeline parallelism</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Splitting layers across devices — and the pipeline-bubble scheduling problem it creates.</p>
+    <p class="doc-syms"><span data-notation="weights-theta"></span></p>
+    <h2>Statement</h2>
+    <p>Assign contiguous layer ranges to different device groups and stream micro-batches through them like an assembly line — stage $i$ computes layers, ships activations to stage $i+1$. The idle time at fill/drain is the "pipeline bubble"; schedules (GPipe, 1F1B, interleaved) exist to shrink it. The layer-wise axis of <a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a>.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/distributed-training/playback.html"><code>distributed-training</code></a> — when the model outgrows even a sharded node's tensor-parallel slice, layers must span machines. PP crosses inter-node links cheaply (activations only, at stage boundaries) at the price of scheduling complexity — it's what makes 100+ layer, trillion-parameter stacks resident at all.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Stage split.</strong> Layers divided evenly across $P$ stages; each stage holds only its slice of <code data-notation="weights-theta">weights-theta</code> + its activations.</li>
+    <li><strong>The bubble.</strong> A pipeline of depth $P$ with $M$ microbatches idles ~$(P-1)/(P+M-1)$ of the schedule — more microbatches → smaller bubble, more memory/queueing.</li>
+    <li><strong>Schedules.</strong> GPipe: fill, then drain (big bubble); 1F1B: steady alternating forward/backward (smaller); interleaved virtual stages: multiple smaller chunks per GPU — Megatron's production default.</li>
+    <li><strong>Communication.</strong> Only boundary activations cross stages — cheap; the real cost is imbalance and the first/last-stage load (embeddings, head).</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>96 layers on 8 stages = 12 layers/stage, $M = 32$ microbatches:</p>
+    <ul>
+    <li>GPipe bubble fraction ≈ $7/39 \approx 18\%$ of the step idle.</li>
+    <li>Interleaved (2 virtual stages): bubble halves to ~9% — same hardware, ~10% more real throughput, which is why it ships.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Huang et al., GPipe — <a href="https://arxiv.org/abs/1811.06965" target="_blank" rel="noopener">arXiv:1811.06965</a></li>
+    <li>Narayanan et al., 1F1B / interleaved — <a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">arXiv:2104.04473</a></li>
+    <li>Harlap et al., PipeDream — <a href="https://arxiv.org/abs/1806.03377" target="_blank" rel="noopener">arXiv:1806.03377</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Asynchronous pipelines with stale weights (PipeDream-style) vs synchronous MFU — is staleness tolerable at LLM scale?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

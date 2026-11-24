@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activation steering · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="activation-steering" data-page-id="activation-steering" data-root="../../">
+  <header class="top">
+    <h1>Activation steering</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">Editing activations mid-forward-pass to steer behaviour — the use-the-parts-you-found half of interpretability.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span> <span data-notation="weights-theta"></span></p>
+    <h2>Statement</h2>
+    <p>Edit behaviour by adding directions to the residual stream mid- forward-pass: compute a steering vector (e.g., mean activation difference between "refuse" and "comply" examples), add a scaled copy to <code data-notation="embed-e">embed-e</code>-space activations during generation, and the behaviour shifts — no <a class="doc-concept" href="../../concepts/gradient-descent/playback.html"><code>gradient-descent</code></a>, no retraining. The use-the-parts-you- found half of <a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a>.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/interpretability/playback.html"><code>interpretability</code></a> — it's the causal test of everything the field claims: if adding a direction reliably changes behaviour, the feature was real. It's also the cheapest possible intervention — inference- time control without touching <code data-notation="weights-theta">weights-theta</code>.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Finding the direction.</strong> Mean-difference of activations between contrast pairs ("honest" vs "sycophantic" completions), or read off an <code>sparse-autoencoders</code> feature directly.</li>
+    <li><strong>Applying it.</strong> $\mathbf{h} \leftarrow \mathbf{h} + \alpha \mathbf{v}$ at chosen layers per token — strength α controls the dosage; too large → gibberish.</li>
+    <li><strong>Golden Gate demo.</strong> Anthropic's mascot experiment: steer with a bridge-feature direction and the model answers everything about the Golden Gate — proof the direction carries meaning.</li>
+    <li><strong>Honesty/safety uses.</strong> Honesty vectors (turn down sycophancy), deception probes, refusal directions — alignment knobs you can dial at inference.</li>
+    <li><strong>Limits.</strong> Coarse control (real traits aren't single directions), context sensitivity (a "honesty" vector can break syntax), and the open question of whether it edits causes or decorates them.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Sycophancy steering (illustrative): collect 100 prompt pairs where the model agrees-with-user vs disagrees-honestly; direction = mean(honest) − mean(agreeing) at layer 15; $\alpha = -3$ during decode → flattery rate drops measurably on a held-out test — control with zero weight updates.</p>
+    <h2>Sources</h2>
+    <ul>
+    <li>Turner et al., steering vectors — <a href="https://arxiv.org/abs/2308.10248" target="_blank" rel="noopener">arXiv:2308.10248</a></li>
+    <li>Templeton et al., Scaling Monosemanticity (Golden Gate) — transformer-circuits.pub/2024/scaling-monosemanticity</li>
+    <li>Zou et al., <em>Representation Engineering</em> — <a href="https://arxiv.org/abs/2310.01405" target="_blank" rel="noopener">arXiv:2310.01405</a></li>
+    <li>Rimsky et al., *Steering Llama 2 via Contrastive Activation Addition* — <a href="https://arxiv.org/abs/2312.06681" target="_blank" rel="noopener">arXiv:2312.06681</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Can steering be a production safety control (calibrated, monitored) or is it an interpretability diagnostic only?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

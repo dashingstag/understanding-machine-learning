@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post-training and alignment · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="post-training" data-page-id="post-training" data-root="../../">
+  <header class="top">
+    <h1>Post-training and alignment</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="playback.html">Playback</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">SFT, RLHF/RLAIF, DPO-style preference optimisation and RL on verifiable rewards — turning a base model into a product.</p>
+    <p class="doc-syms"><span data-notation="reward-r"></span> <span data-notation="pi-policy"></span> <span data-notation="kl-div"></span> <span data-notation="beta"></span> <span data-notation="loss-l"></span></p>
+    <h2>Statement</h2>
+    <p>Everything after <a class="doc-concept" href="../../concepts/pretraining/playback.html"><code>pretraining</code></a> that turns a base model into a product: <code>sft</code> (imitation on demonstrations), <code>reward-models</code> (a learned proxy for preference), <code>rlhf</code> (RL against that proxy — the <a class="doc-concept" href="../../site/notation.html#rlhf-obj"><code>rlhf-obj</code></a> objective), <code>dpo</code> (closed-form preference loss, <a class="doc-concept" href="../../site/notation.html#dpo-loss"><code>dpo-loss</code></a>), and <code>verifiable-rewards</code> RL (the <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a> recipe). Each stage trades <code data-notation="pi-policy">pi-policy</code> distance from the base model for desired behaviour.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><code>modern-machine-learning</code> — a raw base model is unusable: it completes text, doesn't follow instructions, and learned every toxicity of its corpus. Post-training installs instruction-following, style, refusals and reasoning habits — the difference between "a model" and "an assistant".</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>SFT.</strong> <code>sft</code> — supervised fine-tuning on curated demonstrations; installs format and basic helpfulness; every later stage assumes it.</li>
+    <li><strong>Preference data.</strong> Humans rank pairs of completions — the raw signal alignment actually optimizes.</li>
+    <li><strong>Reward model.</strong> <code>reward-models</code> — a classifier trained to predict human preference; the scalable stand-in for the rater.</li>
+    <li><strong>RLHF.</strong> <code>rlhf</code> — PPO maximizes <code data-notation="reward-r">reward-r</code> minus <code data-notation="kl-div">kl-div</code> to the SFT policy (<code data-notation="beta">beta</code> controls drift) — <a class="doc-concept" href="../../site/notation.html#rlhf-obj"><code>rlhf-obj</code></a>.</li>
+    <li><strong>DPO.</strong> <code>dpo</code> — skips the reward model entirely: the closed-form <a class="doc-concept" href="../../site/notation.html#dpo-loss"><code>dpo-loss</code></a> optimizes preferences directly off pairs.</li>
+    <li><strong>RL on verifiable rewards.</strong> <code>verifiable-rewards</code> — where answers are checkable (math, code, tests), RL trains on ground truth — the <a class="doc-concept" href="../../concepts/reasoning-models/playback.html"><code>reasoning-models</code></a> pipeline (GRPO-family).</li>
+    <li><strong>Failure modes.</strong> <code>goodhart-law</code>: reward hacking, sycophancy, mode collapse, "alignment tax" on capability.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>One preference pair: prompt $x$, chosen $y_w$, rejected $y_l$.</p>
+    <ul>
+    <li>RM training: Bradley–Terry — maximize $\log \sigma(r(x,y_w) - r(x,y_l))$; a 1.5-point reward gap between two answers is all the signal needed.</li>
+    <li>DPO on the same pair: increase $\log \pi(y_w|x) - \log \pi(y_l|x)$ relative to the frozen reference — same signal, no RM, no sampling.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Ouyang et al., <em>InstructGPT</em> — <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arXiv:2203.02155</a></li>
+    <li>Christiano et al., <em>Deep RL from Human Preferences</em> — <a href="https://arxiv.org/abs/1706.03741" target="_blank" rel="noopener">arXiv:1706.03741</a></li>
+    <li>Rafailov et al., <em>DPO</em> — <a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">arXiv:2305.18290</a></li>
+    <li>Bai et al., <em>Constitutional AI</em> — <a href="https://arxiv.org/abs/2212.08073" target="_blank" rel="noopener">arXiv:2212.08073</a></li>
+    <li>Ziegler et al., <em>Fine-Tuning LMs from Human Preferences</em> — <a href="https://arxiv.org/abs/1909.08593" target="_blank" rel="noopener">arXiv:1909.08593</a></li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Scalable oversight: aligning models on tasks humans can't verify — the open problem everything else routes around.</li>
+    <li>Alignment tax vs tax-free alignment: does RLHF measurably reduce base-model capability, and can better objectives avoid it?</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>

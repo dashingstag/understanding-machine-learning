@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document chunking · notes</title>
+  <link rel="stylesheet" href="../../site/assets/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body data-concept="document-chunking" data-page-id="document-chunking" data-root="../../">
+  <header class="top">
+    <h1>Document chunking</h1>
+    <nav><a href="../../site/index.html">Map</a><a href="index.md">Notes</a></nav>
+  </header>
+  <main class="doc">
+    <p class="doc-summary muted">How documents are split before embedding — size, overlap, structure — the unglamorous step that decides what can be found.</p>
+    <p class="doc-syms"><span data-notation="embed-e"></span></p>
+    <h2>Statement</h2>
+    <p>How a corpus becomes embeddable units before indexing: split documents into chunks sized for the retriever (typically 200–1000 tokens) with overlap, respecting structure (headings, tables, code blocks) where possible. The atoms <code>vector-search</code> searches over — and the silent determinant of what <a class="doc-concept" href="../../concepts/retrieval-augmented-generation/playback.html"><code>retrieval-augmented-generation</code></a> can find.</p>
+    <h2>In my own words</h2>
+    <p>One paragraph, as few symbols as possible. Written by me, not copied.</p>
+    <h2>Why the parent needs it</h2>
+    <p><a class="doc-concept" href="../../concepts/retrieval-augmented-generation/playback.html"><code>retrieval-augmented-generation</code></a> — a chunk is the unit of recall: split the answer across two chunks and it's unreachable; merge it into a wall of text and it's diluted. Chunking is upstream of everything, so its mistakes are unfixable downstream.</p>
+    <h2>Teardown</h2>
+    <ol>
+    <li><strong>Size tradeoff.</strong> Small chunks → precise matches, missing context; large chunks → self-contained answers, muddy similarity. 300–500 tokens + 10–15% overlap is the default envelope.</li>
+    <li><strong>Structure-aware.</strong> Split at headings/paragraphs/code fences, keep tables whole, attach heading breadcrumbs ("§4.2 · Refunds · ...") — the single highest-leverage upgrade.</li>
+    <li><strong>Semantic/agentic chunking.</strong> Split where embeddings shift topic, or let an LLM draw boundaries — costs compute, helps at edges.</li>
+    <li><strong>Metadata.</strong> Source, date, section, permissions — chunks carry the fields the retriever filters on and the citation prints.</li>
+    <li><strong>Failure signature.</strong> A retrieval miss where the fact exists in the corpus is usually a chunking failure, not an embedder failure.</li>
+    </ol>
+    <h2>Worked example</h2>
+    <p>Policy wiki, §4.2 refund table split at row 3 of 5:</p>
+    <ul>
+    <li>Query "refund for annual plan?" → row 3's chunk says "annual: 50%" but its header context landed in the previous chunk → the retrieved fragment lacks the condition ("within 30 days") — answer wrong with perfect retrieval. Keep-tables-whole fixes it.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+    <li>Lewis et al., RAG — <a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">arXiv:2005.11401</a></li>
+    <li>LangChain/LlamaIndex docs — the recursive-splitter defaults everyone actually runs</li>
+    <li>Anthropic, <em>Contextual Retrieval</em> (2024) — adding doc-level context to each chunk — anthropic.com/news/contextual-retrieval</li>
+    </ul>
+    <h2>Open questions</h2>
+    <ul>
+    <li>Learned chunking end-to-end (retriever-optimized boundaries) vs fixed heuristics — an under-studied lever with outsized effects.</li>
+    </ul>
+    <p class="muted doc-src"><a href="index.md">view markdown source</a></p>
+  </main>
+  <script src="../../site/map.js"></script>
+  <script src="../../site/assets/page-id.js"></script>
+  <script src="../../site/notation-data.js"></script>
+  <script src="../../site/assets/notation.js"></script>
+  <script src="../../site/lore-data.js"></script>
+  <script src="../../site/assets/lore.js"></script>
+  <script src="../../site/assets/notes.js"></script>
+  <script src="../../site/assets/progress.js"></script>
+  <script src="../../site/assets/search.js"></script>
+  <script>window.addEventListener("load", () => window.renderMathInElement && renderMathInElement(document.body, {delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}], throwOnError: false}));</script>
+</body>
+</html>
